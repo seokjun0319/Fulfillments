@@ -950,6 +950,32 @@ function initChatBotFab() {
   if (closeBtn) closeBtn.addEventListener("click", closePanel);
   if (sendBtn) sendBtn.addEventListener("click", send);
   if (input) input.addEventListener("keydown", function (e) { if (e.key === "Enter") send(); });
+
+  var resizeHandle = document.getElementById("chatPanelResize");
+  if (resizeHandle && panel) {
+    var minW = 320, minH = 320;
+    var maxW = Math.min(560, window.innerWidth - 48);
+    var maxH = Math.floor(window.innerHeight * 0.85);
+    resizeHandle.addEventListener("mousedown", function (e) {
+      e.preventDefault();
+      var startX = e.clientX, startY = e.clientY;
+      var startW = panel.offsetWidth, startH = panel.offsetHeight;
+      function onMove(moveEvent) {
+        var dx = startX - moveEvent.clientX;
+        var dy = startY - moveEvent.clientY;
+        var w = Math.max(minW, Math.min(maxW, startW + dx));
+        var h = Math.max(minH, Math.min(maxH, startH + dy));
+        panel.style.width = w + "px";
+        panel.style.height = h + "px";
+      }
+      function onUp() {
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onUp);
+      }
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+    });
+  }
 }
 
 function wireDummySearch() {
