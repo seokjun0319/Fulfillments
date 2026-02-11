@@ -452,6 +452,27 @@ body{
 .chat-panel .chat-messages{ flex: 1; min-height: 120px; overflow-y: auto; }
 .chat-panel .chat-input-wrap{ flex-shrink: 0; border-radius: 0 0 var(--radius) var(--radius); }
 
+/* Minigame */
+.minigame-grid{ display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+@media (max-width: 900px){ .minigame-grid{ grid-template-columns: 1fr; } }
+.minigame-inputs{ display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px; }
+@media (max-width: 600px){ .minigame-inputs{ grid-template-columns: 1fr; } }
+.minigame-label{ display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+.minigame-textarea{ width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; font-family: inherit; resize: vertical; background: var(--surface-2); }
+.ladder-canvas{ min-height: 120px; padding: 16px; background: var(--surface-2); border-radius: var(--radius); margin-bottom: 12px; overflow: auto; }
+.ladder-svg{ max-width: 100%; height: auto; }
+.ladder-svg .ladder-name{ font-size: 12px; fill: var(--text); }
+.ladder-svg .ladder-result{ font-size: 11px; fill: var(--muted); }
+.ladder-result-list{ padding: 12px; background: var(--surface-2); border-radius: var(--radius); }
+.ladder-result-title{ font-weight: 700; margin-bottom: 8px; }
+.ladder-result-ul{ margin: 0; padding-left: 20px; }
+.ladder-result-ul li{ margin-bottom: 6px; }
+.wheel-container{ position: relative; width: 280px; height: 280px; margin: 0 auto 16px; }
+.wheel-pointer{ position: absolute; left: 50%; top: -8px; transform: translateX(-50%); width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 20px solid var(--brand); z-index: 2; pointer-events: none; }
+.wheel{ width: 100%; height: 100%; border-radius: 50%; border: 4px solid var(--border); box-shadow: 0 4px 20px rgba(0,0,0,0.15); transform-origin: center center; }
+.wheel-result{ font-size: 18px; font-weight: 700; text-align: center; min-height: 28px; opacity: 0; transition: opacity 0.3s ease; }
+.wheel-result.is-visible{ opacity: 1; }
+
 /* Buttons */
 .btn{
   padding: 10px 16px;
