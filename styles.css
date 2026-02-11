@@ -409,6 +409,21 @@ body{
   background: var(--surface-2);
 }
 
+.centers-map{
+  width: 100%;
+  height: 380px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  z-index: 0;
+}
+.centers-embed{
+  height: 380px;
+  min-height: 320px;
+}
+.centers-map .leaflet-popup-content{ margin: 10px 14px; font-size: 13px; }
+.centers-map .leaflet-popup-content .muted{ color: var(--muted); font-size: 12px; }
+
 .footer{
   padding: 10px 18px 14px;
   border-top: 1px solid var(--border);

@@ -1,6 +1,43 @@
 const NOTICES_KEY = "fulfillment-notices";
 const SPREADSHEET_URL_KEY = "fulfillment-spreadsheet-url";
 
+const CENTERS_LOCATIONS = [
+  { name: "오산물류센터", type: "물류센터", address: "경기도 오산시 누읍동 황새로 109", lat: 37.1367, lng: 127.0589 },
+  { name: "향남물류센터", type: "물류센터", address: "경기 화성시 향남읍 서봉로 485-25", lat: 37.096, lng: 126.919 },
+  { name: "오산냉장센터", type: "물류센터", address: "경기 오산시 오산로 149", lat: 37.152, lng: 127.071 },
+  { name: "김포MFC", type: "물류센터", address: "경기도 김포시 고촌읍 전호리 725", lat: 37.604, lng: 126.718 },
+  { name: "성남MFC(예정)", type: "물류센터", address: "경기도 성남시 갈마치로 244", lat: 37.398, lng: 127.128 },
+  { name: "한신VC", type: "배송센터", address: "서울특별시 동대문구 천호대로17길 65", lat: 37.574, lng: 127.069 },
+  { name: "복산VC", type: "배송센터", address: "경기 광주시 장지동 388-13", lat: 37.406, lng: 127.258 },
+];
+
+let centersMapInstance = null;
+
+function initCentersMap() {
+  const container = document.getElementById("centers-map");
+  if (!container || typeof L === "undefined") return;
+  if (centersMapInstance) {
+    centersMapInstance.remove();
+    centersMapInstance = null;
+  }
+  const first = CENTERS_LOCATIONS[0];
+  const map = L.map("centers-map").setView([first.lat, first.lng], 10);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a>",
+  }).addTo(map);
+  const bounds = [];
+  CENTERS_LOCATIONS.forEach((c) => {
+    const marker = L.marker([c.lat, c.lng]).addTo(map);
+    marker.bindPopup(`<strong>${escapeHtml(c.name)}</strong><br/><span class="muted">${escapeHtml(c.type)}</span><br/>${escapeHtml(c.address)}`);
+    bounds.push([c.lat, c.lng]);
+  });
+  if (bounds.length > 1) map.fitBounds(bounds, { padding: [30, 30], maxZoom: 12 });
+  setTimeout(function () {
+    map.invalidateSize();
+  }, 100);
+  centersMapInstance = map;
+}
+
 function getSpreadsheetUrl() {
   return localStorage.getItem(SPREADSHEET_URL_KEY) || "";
 }
@@ -301,17 +338,16 @@ const ROUTES = {
     render: () => `
       <div class="grid">
         <div class="card card--wide">
+          <h3 class="card__title">물류센터 위치</h3>
+          <p class="card__body muted" style="margin-bottom:10px;">주소지 기준 로케이션입니다. 마커를 클릭하면 명칭·주소를 볼 수 있습니다.</p>
+          <div id="centers-map" class="centers-map"></div>
+        </div>
+        <div class="card card--wide">
           <h3 class="card__title">물류센터 현황</h3>
-          <table class="table">
-            <thead>
-              <tr><th>센터</th><th>지역</th><th>주요 역할</th><th>상태</th></tr>
-            </thead>
-            <tbody>
-              <tr><td>센터 A</td><td>수도권</td><td>주문/출고</td><td><span class="tag good">운영중</span></td></tr>
-              <tr><td>센터 B</td><td>충청</td><td>입고/반품</td><td><span class="tag warn">확장</span></td></tr>
-              <tr><td>센터 C</td><td>영남</td><td>B2B</td><td><span class="tag">검토</span></td></tr>
-            </tbody>
-          </table>
+          <div class="embed-wrap centers-embed">
+            <iframe title="물류센터 스프레드시트" class="embed-iframe" src="https://docs.google.com/spreadsheets/d/1DiFDr5BMGCX_8nIHhKAYhXmBSHObmRW9xFZpuqBPxp4/pubhtml?widget=true&amp;headers=false"></iframe>
+          </div>
+          <p class="muted" style="margin-top:8px; font-size:12px;">시트가 보이지 않으면 <a href="https://docs.google.com/spreadsheets/d/1DiFDr5BMGCX_8nIHhKAYhXmBSHObmRW9xFZpuqBPxp4/edit?usp=sharing" target="_blank" rel="noopener">이 링크</a>로 열어 보세요.</p>
         </div>
         <div class="card card--full">
           <h3 class="card__title">조직도</h3>
@@ -562,6 +598,7 @@ function render() {
   setActiveNav(routeKey);
   if (routeKey === "notices") wireNotices();
   if (routeKey === "spreadsheet") wireSpreadsheet();
+  if (routeKey === "centers") setTimeout(initCentersMap, 80);
 }
 
 function wireDummySearch() {
