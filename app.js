@@ -1,32 +1,88 @@
-const ROUTES = {
-  notices: {
-    title: "주요 공지사항",
-    desc: "최신 공지와 공지사항 목록을 빠르게 확인합니다.",
-    render: () => `
-      <div class="grid">
-        <div class="card card--wide">
-          <h3 class="card__title">최신 공지</h3>
-          <div class="card__body">
-            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
-              <span class="tag good">중요</span>
-              <span class="tag">운영</span>
-              <span class="muted">2026-02-10</span>
-            </div>
-            <b>[더미]</b> 금주 출고 컷오프 시간 변경 안내 (센터별 상이)
-            <div class="muted" style="margin-top:8px;">본문/첨부/링크 영역은 추후 연결</div>
-          </div>
+const NOTICES_KEY = "fulfillment-notices";
+
+const DEFAULT_NOTICES = [
+  { id: "1", category: "운영", title: "반품 입고 기준 변경", body: "센터별 반품 입고 기준이 변경되었습니다. 자세한 내용은 첨부를 확인해 주세요.", createdAt: "2026-02-08", status: "공지중" },
+  { id: "2", category: "시스템", title: "WMS 점검 안내", body: "WMS 정기 점검 일정 안내입니다.", createdAt: "2026-02-05", status: "종료" },
+  { id: "3", category: "안전", title: "센터 안전교육 안내", body: "전 센터 안전교육 일정을 공지합니다.", createdAt: "2026-02-01", status: "종료" },
+];
+
+function getNotices() {
+  try {
+    const raw = localStorage.getItem(NOTICES_KEY);
+    if (raw) {
+      const list = JSON.parse(raw);
+      if (Array.isArray(list) && list.length) return list;
+    }
+  } catch (_) {}
+  return DEFAULT_NOTICES.slice();
+}
+
+function saveNotices(list) {
+  localStorage.setItem(NOTICES_KEY, JSON.stringify(list));
+}
+
+function addNotice(notice) {
+  const list = getNotices();
+  const id = String(Date.now());
+  const createdAt = new Date().toISOString().slice(0, 10);
+  list.unshift({ id, ...notice, createdAt: notice.createdAt || createdAt });
+  saveNotices(list);
+  return list;
+}
+
+function statusTag(status) {
+  if (status === "공지중") return '<span class="tag warn">공지중</span>';
+  if (status === "예정") return '<span class="tag">예정</span>';
+  return '<span class="tag">종료</span>';
+}
+
+function renderNoticesTab() {
+  const notices = getNotices();
+  const latest = notices[0] || null;
+  const latestHtml = latest
+    ? `
+    <div class="notice-meta" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
+      <span class="tag">${latest.category}</span>
+      <span class="muted">${latest.createdAt}</span>
+      ${latest.status ? statusTag(latest.status) : ""}
+    </div>
+    <b>${escapeHtml(latest.title)}</b>
+    <div class="muted" style="margin-top:8px; white-space:pre-wrap;">${escapeHtml(latest.body || "")}</div>
+  `
+    : `<p class="muted">등록된 공지가 없습니다. 신규 공지를 작성해 주세요.</p>`;
+
+  const rows = notices
+    .map(
+      (n) =>
+        `<tr>
+          <td>${escapeHtml(n.category)}</td>
+          <td>${escapeHtml(n.title)}</td>
+          <td>${n.createdAt}</td>
+          <td>${statusTag(n.status)}</td>
+        </tr>`
+    )
+    .join("");
+
+  return `
+    <div class="grid">
+      <div class="card card--wide">
+        <h3 class="card__title">최신 공지</h3>
+        <div class="card__body">${latestHtml}</div>
+      </div>
+      <div class="card">
+        <h3 class="card__title">바로가기</h3>
+        <div class="card__body">
+          - 공지 작성/승인 프로세스(더미)<br/>
+          - 변경 이력(더미)<br/>
+          - 자주 묻는 질문(더미)
         </div>
-        <div class="card">
-          <h3 class="card__title">바로가기</h3>
-          <div class="card__body">
-            - 공지 작성/승인 프로세스(더미)<br/>
-            - 변경 이력(더미)<br/>
-            - 자주 묻는 질문(더미)
-          </div>
+      </div>
+      <div class="card card--full">
+        <div class="card__head" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+          <h3 class="card__title" style="margin:0;">공지사항 목록</h3>
+          <button type="button" class="btn btn--primary" id="btnAddNotice">신규 공지 작성</button>
         </div>
-        <div class="card card--full">
-          <h3 class="card__title">공지사항 목록</h3>
-          <div class="card__body" style="margin-bottom:10px;">테이블/필터/검색 UI는 추후 고도화</div>
+        <div class="table-wrap">
           <table class="table">
             <thead>
               <tr>
@@ -36,15 +92,104 @@ const ROUTES = {
                 <th style="width:120px;">상태</th>
               </tr>
             </thead>
-            <tbody>
-              <tr><td>운영</td><td>[더미] 반품 입고 기준 변경</td><td>2026-02-08</td><td><span class="tag warn">공지중</span></td></tr>
-              <tr><td>시스템</td><td>[더미] WMS 점검 안내</td><td>2026-02-05</td><td><span class="tag">종료</span></td></tr>
-              <tr><td>안전</td><td>[더미] 센터 안전교육 안내</td><td>2026-02-01</td><td><span class="tag">종료</span></td></tr>
-            </tbody>
+            <tbody>${rows}</tbody>
           </table>
         </div>
       </div>
-    `,
+    </div>
+    <div class="modal" id="noticeModal" aria-hidden="true">
+      <div class="modal__backdrop" id="noticeModalBackdrop"></div>
+      <div class="modal__box" role="dialog" aria-labelledby="noticeModalTitle">
+        <h3 class="modal__title" id="noticeModalTitle">신규 공지 작성</h3>
+        <form id="noticeForm" class="form">
+          <div class="form__row">
+            <label class="form__label" for="noticeCategory">구분</label>
+            <select id="noticeCategory" class="form__input" required>
+              <option value="운영">운영</option>
+              <option value="시스템">시스템</option>
+              <option value="안전">안전</option>
+              <option value="기타">기타</option>
+            </select>
+          </div>
+          <div class="form__row">
+            <label class="form__label" for="noticeTitle">제목</label>
+            <input type="text" id="noticeTitle" class="form__input" placeholder="공지 제목" required />
+          </div>
+          <div class="form__row">
+            <label class="form__label" for="noticeBody">본문</label>
+            <textarea id="noticeBody" class="form__input form__textarea" placeholder="공지 내용 (선택)"></textarea>
+          </div>
+          <div class="form__row">
+            <label class="form__label" for="noticeStatus">상태</label>
+            <select id="noticeStatus" class="form__input">
+              <option value="공지중">공지중</option>
+              <option value="예정">예정</option>
+              <option value="종료">종료</option>
+            </select>
+          </div>
+          <div class="form__actions">
+            <button type="button" class="btn btn--secondary" id="noticeModalClose">취소</button>
+            <button type="submit" class="btn btn--primary">등록</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+}
+
+function escapeHtml(s) {
+  if (s == null) return "";
+  const div = document.createElement("div");
+  div.textContent = s;
+  return div.innerHTML;
+}
+
+function openNoticeModal() {
+  const el = document.getElementById("noticeModal");
+  if (el) {
+    el.setAttribute("aria-hidden", "false");
+    el.classList.add("modal--open");
+    document.getElementById("noticeTitle").focus();
+  }
+}
+
+function closeNoticeModal() {
+  const el = document.getElementById("noticeModal");
+  if (el) {
+    el.setAttribute("aria-hidden", "true");
+    el.classList.remove("modal--open");
+  }
+}
+
+function wireNotices() {
+  const btn = document.getElementById("btnAddNotice");
+  const form = document.getElementById("noticeForm");
+  const closeBtn = document.getElementById("noticeModalClose");
+  const backdrop = document.getElementById("noticeModalBackdrop");
+  if (btn) btn.addEventListener("click", openNoticeModal);
+  if (closeBtn) closeBtn.addEventListener("click", closeNoticeModal);
+  if (backdrop) backdrop.addEventListener("click", closeNoticeModal);
+  if (form) {
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const category = document.getElementById("noticeCategory").value.trim();
+      const title = document.getElementById("noticeTitle").value.trim();
+      const body = document.getElementById("noticeBody").value.trim();
+      const status = document.getElementById("noticeStatus").value;
+      if (!title) return;
+      addNotice({ category, title, body, status });
+      form.reset();
+      closeNoticeModal();
+      render();
+    });
+  }
+}
+
+const ROUTES = {
+  notices: {
+    title: "주요 공지사항",
+    desc: "최신 공지와 공지사항 목록을 빠르게 확인합니다.",
+    render: renderNoticesTab,
   },
   dashboard: {
     title: "대시보드",
@@ -364,6 +509,7 @@ function render() {
   document.getElementById("pageDesc").textContent = route.desc;
   document.getElementById("content").innerHTML = route.render();
   setActiveNav(routeKey);
+  if (routeKey === "notices") wireNotices();
 }
 
 function wireDummySearch() {

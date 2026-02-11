@@ -288,6 +288,105 @@ body{
 .table--glossary td:first-child{ font-weight: 600; color: rgba(15, 23, 42, 0.9); }
 .table--glossary td:nth-child(2){ color: rgba(15, 23, 42, 0.75); }
 
+/* Buttons */
+.btn{
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.btn--primary{
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
+.btn--primary:hover{ filter: brightness(1.08); }
+.btn--secondary{
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: rgba(15, 23, 42, 0.14);
+}
+.btn--secondary:hover{ background: rgba(15, 23, 42, 0.06); }
+
+/* Modal */
+.modal{
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  visibility: hidden;
+  opacity: 0;
+  transition: visibility 0.2s ease, opacity 0.2s ease;
+}
+.modal--open{
+  visibility: visible;
+  opacity: 1;
+}
+.modal__backdrop{
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  cursor: pointer;
+}
+.modal__box{
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  max-height: 90vh;
+  overflow: auto;
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  padding: 20px 24px;
+}
+.modal__title{
+  margin: 0 0 16px;
+  font-size: 18px;
+}
+
+/* Form */
+.form__row{ margin-bottom: 14px; }
+.form__label{
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(15, 23, 42, 0.85);
+}
+.form__input{
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+}
+.form__input:focus{
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(11, 95, 255, 0.12);
+}
+.form__textarea{
+  min-height: 100px;
+  resize: vertical;
+}
+.form__actions{
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
 .footer{
   padding: 10px 18px 14px;
   border-top: 1px solid var(--border);
