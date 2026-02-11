@@ -1,6 +1,6 @@
 # fulfillment-info (prototype)
 
-이지메디컴 풀필먼트 사업부 정보공유 페이지 **UI 뼈대(모양만)** 입니다.
+이지메디컴 풀필먼트사업부 AI Workspace **UI 뼈대(모양만)** 입니다.
 
 ## 실행 방법
 

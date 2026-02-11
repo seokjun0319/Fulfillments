@@ -3,7 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>이지메디컴 풀필먼트 정보공유</title>
+    <title>이지메디컴 풀필먼트사업부 AI Workspace</title>
+    <link rel="icon" href="./assets/logo.png" type="image/png" />
+    <link rel="apple-touch-icon" href="./assets/logo.png" />
     <link rel="stylesheet" href="./styles.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   </head>
@@ -15,7 +17,7 @@
             <img class="brand__logo" src="./assets/logo.png" alt="ezmedicom" onerror="this.src='./assets/logo.svg';this.alt='EZMEDICOM'" />
             <div class="brand__text">
           <div class="brand__title">EZMEDICOM</div>
-          <div class="brand__sub">풀필먼트 사업부 정보공유</div>
+          <div class="brand__sub">풀필먼트사업부 AI Workspace</div>
             </div>
           </div>
         </div>
@@ -79,9 +81,29 @@
         <section class="content" id="content" aria-live="polite"></section>
 
         <footer class="footer">
-          <span class="muted">© EZMEDICOM Fulfillment • 내부 정보공유(초안)</span>
+          <span class="muted">© EZMEDICOM Fulfillment • 풀필먼트사업부 AI Workspace (초안)</span>
         </footer>
       </main>
+    </div>
+
+    <button type="button" class="chat-fab" id="chatBotFab" title="AI Chat-Bot" aria-label="챗봇 열기">
+      <span class="chat-fab__label">AI Chat-Bot</span>
+    </button>
+    <div class="chat-panel" id="chatPanel" aria-hidden="true">
+      <div class="chat-panel__head">
+        <span class="chat-panel__title">AI Chat-Bot</span>
+        <button type="button" class="chat-panel__close" id="chatPanelClose" aria-label="닫기">×</button>
+      </div>
+      <div class="chat-messages" id="chatMessages">
+        <div class="chat-msg chat-msg--bot">
+          <span class="chat-msg__label">Bot</span>
+          <p class="chat-msg__text">안녕하세요. 풀필먼트사업부 AI Workspace 챗봇입니다. 궁금한 점을 입력해 주세요.</p>
+        </div>
+      </div>
+      <div class="chat-input-wrap">
+        <input type="text" class="chat-input" id="chatInput" placeholder="메시지를 입력하세요..." />
+        <button type="button" class="btn btn--primary" id="chatSend">전송</button>
+      </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>

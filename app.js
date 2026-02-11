@@ -671,7 +671,7 @@ const ROUTES = {
   },
   dashboard: {
     title: "AI Dashboard",
-    desc: "SLA, KPI, 사업부 손익, 물동량 등 주요 지표를 한눈에 봅니다.",
+    desc: "SLA, KPI, 손익, 물동량 등 주요 지표를 한눈에 봅니다.",
     render: () => `
       <div class="grid">
         <div class="card card--wide">
@@ -725,7 +725,7 @@ const ROUTES = {
   },
   simulator: {
     title: "AI Simulator",
-    desc: "물동량 포케스팅, 스태핑(인력) 계획 등을 시뮬레이션합니다.",
+    desc: "물동량 포케스팅·스태핑(인력) 계획 등을 시뮬레이션합니다.",
     render: () => `
       <div class="grid">
         <div class="card card--wide">
@@ -896,10 +896,12 @@ function setActiveNav(routeKey) {
   });
 }
 
+var PAGE_HEADER_TITLES = { dashboard: "AI Dashboard", simulator: "AI Simulator" };
 function render() {
   const routeKey = getRouteFromHash();
   const route = ROUTES[routeKey];
-  document.getElementById("pageTitle").textContent = route.title;
+  var headerTitle = PAGE_HEADER_TITLES[routeKey] || route.title;
+  document.getElementById("pageTitle").textContent = headerTitle;
   document.getElementById("pageDesc").textContent = route.desc;
   document.getElementById("content").innerHTML = route.render();
   setActiveNav(routeKey);
@@ -907,6 +909,47 @@ function render() {
   if (routeKey === "contacts") wireContacts();
   if (routeKey === "knowhow") wireKnowhow();
   if (routeKey === "centers") setTimeout(initCentersMap, 80);
+}
+
+function initChatBotFab() {
+  var fab = document.getElementById("chatBotFab");
+  var panel = document.getElementById("chatPanel");
+  var closeBtn = document.getElementById("chatPanelClose");
+  var input = document.getElementById("chatInput");
+  var sendBtn = document.getElementById("chatSend");
+  var messagesEl = document.getElementById("chatMessages");
+  function openPanel() {
+    if (panel) {
+      panel.classList.add("chat-panel--open");
+      panel.setAttribute("aria-hidden", "false");
+      if (input) input.focus();
+    }
+  }
+  function closePanel() {
+    if (panel) {
+      panel.classList.remove("chat-panel--open");
+      panel.setAttribute("aria-hidden", "true");
+    }
+  }
+  function appendMsg(isUser, text) {
+    if (!messagesEl) return;
+    var div = document.createElement("div");
+    div.className = "chat-msg " + (isUser ? "chat-msg--user" : "chat-msg--bot");
+    div.innerHTML = "<span class=\"chat-msg__label\">" + (isUser ? "You" : "Bot") + "</span><p class=\"chat-msg__text\">" + escapeHtml(text) + "</p>";
+    messagesEl.appendChild(div);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+  function send() {
+    var text = (input && input.value || "").trim();
+    if (!text) return;
+    appendMsg(true, text);
+    if (input) input.value = "";
+    appendMsg(false, "연동 준비 중입니다. 추후 AI 답변이 제공될 예정입니다.");
+  }
+  if (fab) fab.addEventListener("click", openPanel);
+  if (closeBtn) closeBtn.addEventListener("click", closePanel);
+  if (sendBtn) sendBtn.addEventListener("click", send);
+  if (input) input.addEventListener("keydown", function (e) { if (e.key === "Enter") send(); });
 }
 
 function wireDummySearch() {
@@ -926,6 +969,7 @@ function wireDummySearch() {
 window.addEventListener("hashchange", render);
 window.addEventListener("DOMContentLoaded", () => {
   wireDummySearch();
+  initChatBotFab();
   render();
 });
 
