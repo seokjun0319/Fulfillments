@@ -670,7 +670,7 @@ const ROUTES = {
     render: renderNoticesTab,
   },
   dashboard: {
-    title: "대시보드",
+    title: "AI Dashboard",
     desc: "SLA, KPI, 사업부 손익, 물동량 등 주요 지표를 한눈에 봅니다.",
     render: () => `
       <div class="grid">
@@ -724,7 +724,7 @@ const ROUTES = {
     `,
   },
   simulator: {
-    title: "시뮬레이터",
+    title: "AI Simulator",
     desc: "물동량 포케스팅, 스태핑(인력) 계획 등을 시뮬레이션합니다.",
     render: () => `
       <div class="grid">
