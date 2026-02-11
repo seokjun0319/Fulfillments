@@ -1,5 +1,122 @@
 const NOTICES_KEY = "fulfillment-notices";
-const SPREADSHEET_URL_KEY = "fulfillment-spreadsheet-url";
+const CONTACTS_KEY = "fulfillment-contacts";
+
+const DEFAULT_CONTACTS = [
+  { id: "1", category: "도급사", company: "KPO", name: "이창용 소장", phone: "010-2223-9495", email: "", note: "김포 도급 관리자" },
+  { id: "2", category: "도급사", company: "KPO", name: "한준희 소장", phone: "010-6812-1177", email: "", note: "향남 도급 관리자" },
+  { id: "3", category: "도급사", company: "KPO", name: "최지홍 소장", phone: "", email: "", note: "냉장 도급 관리자" },
+  { id: "4", category: "운송사", company: "스마일로지스", name: "이창화 대표", phone: "010-5336-1824", email: "", note: "거점물류 운송사 대표" },
+  { id: "5", category: "운송사", company: "스마일로지스", name: "이호준 상무", phone: "", email: "", note: "거점물류 운송사 관리자" },
+  { id: "6", category: "운송사", company: "선경CLS", name: "실장", phone: "010-5058-5955", email: "", note: "향남-김포 간선업체 계약관리자" },
+  { id: "7", category: "운송사", company: "선경CLS", name: "기사님", phone: "010-2599-2879", email: "", note: "향남-김포 간선차량 기사님 (11톤 정온)" },
+  { id: "8", category: "공급사", company: "티피솔루션", name: "문소성 팀장", phone: "010-5341-2503", email: "", note: "에어캡 매입처" },
+  { id: "9", category: "공급사", company: "태림포장", name: "안인혁 대리", phone: "010-4057-9022", email: "", note: "박스 매입처" },
+  { id: "10", category: "종합공사", company: "디앤아이건설", name: "이동원 대표", phone: "010-2737-3832", email: "", note: "전기, 건축, 공조, 소방 등등 공사가능 / 김포, 냉장 공사수행 이력있음" },
+  { id: "11", category: "네트워크", company: "노블시스", name: "하영민 부장", phone: "010-3934-4559", email: "", note: "네트워크 공사 및 망구성 협력사 / vpn방화벽 등 내부망 구성 히스토리를 많이 알고 있어 진행 원활" },
+  { id: "12", category: "보안", company: "에스원", name: "양재창 대리", phone: "010-2805-5479", email: "", note: "에스원 법인 담당자 / 전 지역 대응가능" },
+  { id: "13", category: "방서방충", company: "렌토킬", name: "이도형 팀장", phone: "010-6206-8182", email: "", note: "렌토킬 법인 담당자 / 전 지역 대응가능" },
+];
+
+function getContacts() {
+  try {
+    const raw = localStorage.getItem(CONTACTS_KEY);
+    if (raw) {
+      const list = JSON.parse(raw);
+      if (Array.isArray(list) && list.length) return list;
+    }
+  } catch (_) {}
+  return DEFAULT_CONTACTS.map((c) => ({ ...c }));
+}
+
+function saveContacts(list) {
+  localStorage.setItem(CONTACTS_KEY, JSON.stringify(list));
+}
+
+function addContact(contact) {
+  const list = getContacts();
+  const id = String(Date.now());
+  list.push({ id, ...contact });
+  saveContacts(list);
+  return list;
+}
+
+function updateContact(id, contact) {
+  const list = getContacts();
+  const i = list.findIndex((c) => c.id === id);
+  if (i >= 0) list[i] = { ...list[i], ...contact };
+  saveContacts(list);
+  return list;
+}
+
+function deleteContact(id) {
+  const list = getContacts().filter((c) => c.id !== id);
+  saveContacts(list);
+  return list;
+}
+
+const CONTACT_CATEGORIES = ["도급사", "운송사", "공급사", "종합공사", "네트워크", "보안", "방서방충", "기타"];
+
+const GLOSSARY_KEY = "fulfillment-glossary";
+const DEFAULT_GLOSSARY = [
+  { id: "1", termKo: "입/출고", termEn: "IB/OB (Inbound/Outbound)", description: "입고(IB)는 상품이 물류센터로 들어오는 프로세스, 출고(OB)는 주문에 따라 상품이 센터에서 외부로 나가는 프로세스를 의미" },
+  { id: "2", termKo: "재고", termEn: "Inventory", description: "현재 물류센터에 보관 중인 상품 수량" },
+  { id: "3", termKo: "가용재고", termEn: "Available Stock", description: "주문 가능한 재고 (불량·홀드 재고 제외)" },
+  { id: "4", termKo: "상품관리단위 (스큐)", termEn: "SKU (Stock Keeping Unit)", description: "재고 관리를 위해 상품의 종류·규격·포장·속성별로 구분한 최소 관리 단위. 예) 우루사라는 상품이 있지만 100mg / 400mg 규격이 있으면 규격단위가 SKU 임 (=상품코드 단위)" },
+  { id: "5", termKo: "피킹 (집품)", termEn: "Picking", description: "주문에 따라 로케이션에서 상품을 집품하는 작업" },
+  { id: "6", termKo: "패킹 (포장)", termEn: "Packing", description: "피킹된 상품을 포장하여 출고 준비하는 작업" },
+  { id: "7", termKo: "입하", termEn: "Receiving / Inbound Receiving", description: "외부(공급처·제조사)에서 물류센터로 상품이 실제 도착하여 입고를 대기함" },
+  { id: "8", termKo: "출하", termEn: "Shipping / Outbound Shipping", description: "주문 또는 출고 지시에 따라 상품을 집품·포장하여 물류센터에서 외부로 출발시키는 과정" },
+  { id: "9", termKo: "로케이션", termEn: "Loc (Location)", description: "물류센터 내 상품이 적치되는 물리적 위치 주소 (예: Zone–Rack–Shelf–Bin 단위로 관리) → 피킹지에 표기되는 위치주소값" },
+  { id: "10", termKo: "존 (구역)", termEn: "Zone", description: "일반적으로 센터 내, 층 내에서 특정 구역을 가리킴 (Sector)" },
+  { id: "11", termKo: "선입선출/선출선입", termEn: "FIFO/FEFO", description: "FIFO: 먼저 입고된 재고를 먼저 출고. FEFO: 유통기한이 빠른 재고를 우선 출고 (식품·의약품 필수)" },
+  { id: "12", termKo: "적격성 평가 (밸리데이션)", termEn: "Validation", description: "프로세스·시스템·설비가 의도한 목적에 맞게 일관되게 작동함을 검증하는 절차 (의약·콜드체인 핵심 개념). 사전 프로토콜(상세계획) 수립 → 밸리데이션 수행 → 리포트 작성/승인 절차로 진행됨" },
+  { id: "13", termKo: "표준운영절차", termEn: "SOP (Standard Operating Procedure)", description: "물류 업무(입하·보관·피킹·출하 등)를 일관된 방식으로 수행하기 위해 단계별로 정의한 표준 업무 절차 문서" },
+  { id: "14", termKo: "KGSP", termEn: "KGSP (Korea Good Supply Practice)", description: "의약품의 보관·수송 과정에서 품질과 안전성을 유지하기 위한 국내 우수유통관리기준. 의약품 유통을 위해서는 창고가 KGSP 적격업소 지정을 받아야 함" },
+  { id: "15", termKo: "KGSP 기준서", termEn: "KGSP Guideline / Manual", description: "KGSP 요건을 충족하기 위해 시설·설비·운영·관리 기준을 문서화한 내부 기준 문서" },
+  { id: "16", termKo: "콜드체인", termEn: "Cold Chain", description: "의약품·식품 등을 정해진 저온 범위에서 보관·운송·출하하는 온도 관리 물류 체계. 이지메디컴에서는 냉장(2-8도) / 초저온 (-80도 이하) 으로 운영 중" },
+  { id: "17", termKo: "검·교정", termEn: "Calibration / Verification", description: "계측 장비가 정확한 값을 측정하는지 확인(검증)하고 기준에 맞게 조정하는 절차. 유효기간이 1년이므로 지정된 장비는 1년마다 수행해야 함 (온도로거 등)" },
+  { id: "18", termKo: "파레트랙", termEn: "Pallet Rack", description: "파레트 단위 상품을 지게차로 적치·보관하기 위한 중량용 랙 시스템" },
+  { id: "19", termKo: "선반랙", termEn: "Shelf Rack", description: "박스·소형 단위 상품을 수작업으로 보관·피킹하기 위한 선반 랙. 내하중에 따라 경량랙, 중량랙이 있음 구매 진행 시 하중을 고려하여 설계" },
+  { id: "20", termKo: "풀필먼트", termEn: "Fulfillment", description: "주문 접수부터 보관·피킹·패킹·출하·반품까지 일괄 처리하는 물류 서비스. 3PL의 확대 개념이며 일반적으로 플랫폼(약국몰, 병원몰, 네스스, 쿠팡 등) 주문관리부터 CS까지 관여함" },
+  { id: "21", termKo: "3PL", termEn: "3PL (Third Party Logistics)", description: "기업의 물류 업무를 외부 전문 물류업체가 대행하는 운영 방식. 일반적으로 화주사-유통사 관계를 말하고 위탁물류(사입X)를 수행하는 방식" },
+];
+
+function getGlossary() {
+  try {
+    const raw = localStorage.getItem(GLOSSARY_KEY);
+    if (raw) {
+      const list = JSON.parse(raw);
+      if (Array.isArray(list) && list.length) return list;
+    }
+  } catch (_) {}
+  return DEFAULT_GLOSSARY.map((g) => ({ ...g }));
+}
+
+function saveGlossary(list) {
+  localStorage.setItem(GLOSSARY_KEY, JSON.stringify(list));
+}
+
+function addGlossaryItem(item) {
+  const list = getGlossary();
+  const id = String(Date.now());
+  list.push({ id, ...item });
+  saveGlossary(list);
+  return list;
+}
+
+function updateGlossaryItem(id, item) {
+  const list = getGlossary();
+  const i = list.findIndex((g) => g.id === id);
+  if (i >= 0) list[i] = { ...list[i], ...item };
+  saveGlossary(list);
+  return list;
+}
+
+function deleteGlossaryItem(id) {
+  const list = getGlossary().filter((g) => g.id !== id);
+  saveGlossary(list);
+  return list;
+}
 
 const CENTERS_LOCATIONS = [
   { name: "오산물류센터", type: "물류센터", address: "경기도 오산시 누읍동 황새로 109", lat: 37.1367, lng: 127.0589 },
@@ -37,15 +154,6 @@ function initCentersMap() {
   }, 100);
   centersMapInstance = map;
 }
-
-function getSpreadsheetUrl() {
-  return localStorage.getItem(SPREADSHEET_URL_KEY) || "";
-}
-function setSpreadsheetUrl(url) {
-  if (url && url.trim()) localStorage.setItem(SPREADSHEET_URL_KEY, url.trim());
-  else localStorage.removeItem(SPREADSHEET_URL_KEY);
-}
-
 
 const DEFAULT_NOTICES = [
   { id: "1", category: "운영", title: "반품 입고 기준 변경", body: "센터별 반품 입고 기준이 변경되었습니다. 자세한 내용은 첨부를 확인해 주세요.", createdAt: "2026-02-08", status: "공지중" },
@@ -232,6 +340,329 @@ function wireNotices() {
   }
 }
 
+function renderContactsTab() {
+  const list = getContacts();
+  const rows = list
+    .map(
+      (c) => `
+    <tr data-contact-id="${c.id}">
+      <td>${escapeHtml(c.category)}</td>
+      <td>${escapeHtml(c.company)}</td>
+      <td>${escapeHtml(c.name)}</td>
+      <td>${escapeHtml(c.phone)}</td>
+      <td>${escapeHtml(c.email)}</td>
+      <td>${escapeHtml(c.note)}</td>
+      <td class="table-actions">
+        <button type="button" class="btn-icon btn-edit" data-id="${c.id}" title="수정">✎</button>
+        <button type="button" class="btn-icon btn-delete" data-id="${c.id}" title="삭제">×</button>
+      </td>
+    </tr>`
+    )
+    .join("");
+  const categoryOptions = CONTACT_CATEGORIES.map((cat) => `<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`).join("");
+  return `
+    <div class="grid">
+      <div class="card card--full">
+        <div class="card__head" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+          <h3 class="card__title" style="margin:0;">연락망</h3>
+          <button type="button" class="btn btn--primary" id="btnAddContact">추가</button>
+        </div>
+        <p class="card__body muted" style="margin-bottom:12px;">구분·업체·담당자·연락처를 관리합니다. 추가·수정·삭제 시 브라우저에 저장됩니다.</p>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th style="width:90px;">구분</th>
+                <th style="width:110px;">업체명</th>
+                <th style="width:120px;">담당자 이름</th>
+                <th style="width:130px;">담당자 연락처</th>
+                <th style="width:140px;">이메일</th>
+                <th>비고</th>
+                <th style="width:80px;"></th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+        <div class="modal" id="contactModal" aria-hidden="true">
+          <div class="modal__backdrop" id="contactModalBackdrop"></div>
+          <div class="modal__box" role="dialog" aria-labelledby="contactModalTitle" style="max-width:480px;">
+            <h3 class="modal__title" id="contactModalTitle">연락처 추가</h3>
+            <form id="contactForm" class="form">
+              <input type="hidden" id="contactId" value="" />
+              <div class="form__row">
+                <label class="form__label" for="contactCategory">구분</label>
+                <select id="contactCategory" class="form__input" required>${categoryOptions}</select>
+              </div>
+              <div class="form__row">
+                <label class="form__label" for="contactCompany">업체명</label>
+                <input type="text" id="contactCompany" class="form__input" required />
+              </div>
+              <div class="form__row">
+                <label class="form__label" for="contactName">담당자 이름</label>
+                <input type="text" id="contactName" class="form__input" required />
+              </div>
+              <div class="form__row">
+                <label class="form__label" for="contactPhone">담당자 연락처</label>
+                <input type="text" id="contactPhone" class="form__input" placeholder="010-0000-0000" />
+              </div>
+              <div class="form__row">
+                <label class="form__label" for="contactEmail">이메일</label>
+                <input type="email" id="contactEmail" class="form__input" placeholder="example@email.com" />
+              </div>
+              <div class="form__row">
+                <label class="form__label" for="contactNote">비고</label>
+                <input type="text" id="contactNote" class="form__input" placeholder="비고" />
+              </div>
+              <div class="form__actions">
+                <button type="button" class="btn btn--secondary" id="contactModalClose">취소</button>
+                <button type="submit" class="btn btn--primary">저장</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function openContactModal(contact) {
+  const modal = document.getElementById("contactModal");
+  const title = document.getElementById("contactModalTitle");
+  const idInput = document.getElementById("contactId");
+  if (!modal || !title || !idInput) return;
+  if (contact) {
+    title.textContent = "연락처 수정";
+    idInput.value = contact.id;
+    document.getElementById("contactCategory").value = contact.category || "";
+    document.getElementById("contactCompany").value = contact.company || "";
+    document.getElementById("contactName").value = contact.name || "";
+    document.getElementById("contactPhone").value = contact.phone || "";
+    document.getElementById("contactEmail").value = contact.email || "";
+    document.getElementById("contactNote").value = contact.note || "";
+  } else {
+    title.textContent = "연락처 추가";
+    idInput.value = "";
+    document.getElementById("contactForm").reset();
+  }
+  modal.setAttribute("aria-hidden", "false");
+  modal.classList.add("modal--open");
+  document.getElementById("contactName").focus();
+}
+
+function closeContactModal() {
+  const modal = document.getElementById("contactModal");
+  if (modal) {
+    modal.setAttribute("aria-hidden", "true");
+    modal.classList.remove("modal--open");
+  }
+}
+
+function wireContacts() {
+  const btnAdd = document.getElementById("btnAddContact");
+  const form = document.getElementById("contactForm");
+  const closeBtn = document.getElementById("contactModalClose");
+  const backdrop = document.getElementById("contactModalBackdrop");
+  if (btnAdd) btnAdd.addEventListener("click", () => openContactModal(null));
+  if (closeBtn) closeBtn.addEventListener("click", closeContactModal);
+  if (backdrop) backdrop.addEventListener("click", closeContactModal);
+  document.querySelectorAll(".btn-edit").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.id;
+      const list = getContacts();
+      const c = list.find((x) => x.id === id);
+      if (c) openContactModal(c);
+    });
+  });
+  document.querySelectorAll(".btn-delete").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.id;
+      if (!confirm("이 연락처를 삭제할까요?")) return;
+      deleteContact(id);
+      render();
+    });
+  });
+  if (form) {
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const id = document.getElementById("contactId").value.trim();
+      const category = document.getElementById("contactCategory").value.trim();
+      const company = document.getElementById("contactCompany").value.trim();
+      const name = document.getElementById("contactName").value.trim();
+      const phone = document.getElementById("contactPhone").value.trim();
+      const email = document.getElementById("contactEmail").value.trim();
+      const note = document.getElementById("contactNote").value.trim();
+      if (!company || !name) return;
+      const data = { category, company, name, phone, email, note };
+      if (id) updateContact(id, data);
+      else addContact(data);
+      closeContactModal();
+      render();
+    });
+  }
+}
+
+function renderKnowhowTab() {
+  const list = getGlossary();
+  const rows = list
+    .map(
+      (g) => `
+    <tr data-glossary-id="${g.id}">
+      <td>${escapeHtml(g.termKo)}</td>
+      <td>${escapeHtml(g.termEn)}</td>
+      <td>${escapeHtml(g.description)}</td>
+      <td class="table-actions">
+        <button type="button" class="btn-icon btn-edit" data-id="${g.id}" title="수정">✎</button>
+        <button type="button" class="btn-icon btn-delete" data-id="${g.id}" title="삭제">×</button>
+      </td>
+    </tr>`
+    )
+    .join("");
+  return `
+    <div class="grid">
+      <div class="card card--full">
+        <div class="card__head" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+          <h3 class="card__title" style="margin:0;">물류 용어집</h3>
+          <button type="button" class="btn btn--primary" id="btnAddGlossary">추가</button>
+        </div>
+        <p class="card__body muted" style="margin-bottom:12px;">용어를 추가·수정·삭제할 수 있습니다. 변경 내용은 브라우저에 저장됩니다.</p>
+        <div class="table-wrap">
+          <table class="table table--glossary">
+            <thead>
+              <tr>
+                <th style="width:180px;">용어(한글)</th>
+                <th style="width:200px;">용어(영어)</th>
+                <th>설명</th>
+                <th style="width:80px;"></th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+        <div class="modal" id="glossaryModal" aria-hidden="true">
+          <div class="modal__backdrop" id="glossaryModalBackdrop"></div>
+          <div class="modal__box" role="dialog" aria-labelledby="glossaryModalTitle" style="max-width:520px;">
+            <h3 class="modal__title" id="glossaryModalTitle">용어 추가</h3>
+            <form id="glossaryForm" class="form">
+              <input type="hidden" id="glossaryId" value="" />
+              <div class="form__row">
+                <label class="form__label" for="glossaryTermKo">용어(한글)</label>
+                <input type="text" id="glossaryTermKo" class="form__input" required />
+              </div>
+              <div class="form__row">
+                <label class="form__label" for="glossaryTermEn">용어(영어)</label>
+                <input type="text" id="glossaryTermEn" class="form__input" />
+              </div>
+              <div class="form__row">
+                <label class="form__label" for="glossaryDescription">설명</label>
+                <textarea id="glossaryDescription" class="form__input form__textarea" rows="4"></textarea>
+              </div>
+              <div class="form__actions">
+                <button type="button" class="btn btn--secondary" id="glossaryModalClose">취소</button>
+                <button type="submit" class="btn btn--primary">저장</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+      <div class="card card--wide">
+        <h3 class="card__title">업무 노하우</h3>
+        <div class="card__body">
+          <b>피크 대응 체크리스트</b><br/>
+          1) 물동량 예측 확인<br/>
+          2) 인력 배치/교대 계획<br/>
+          3) 병목 공정 사전 점검(피킹/포장/출고)<br/>
+          <div class="muted" style="margin-top:10px;">문서/링크 형태로 확장 가능</div>
+        </div>
+      </div>
+      <div class="card card--full">
+        <h3 class="card__title">문서 목록</h3>
+        <table class="table">
+          <thead><tr><th>카테고리</th><th>제목</th><th>업데이트</th><th>상태</th></tr></thead>
+          <tbody>
+            <tr><td>표준</td><td>출고 예외 처리 가이드</td><td>2026-02-03</td><td><span class="tag good">최신</span></td></tr>
+            <tr><td>교육</td><td>신규 입고 담당자 온보딩</td><td>2026-01-27</td><td><span class="tag">유지</span></td></tr>
+            <tr><td>FAQ</td><td>반품 분류 기준</td><td>2026-01-15</td><td><span class="tag">유지</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function openGlossaryModal(item) {
+  const modal = document.getElementById("glossaryModal");
+  const title = document.getElementById("glossaryModalTitle");
+  const idInput = document.getElementById("glossaryId");
+  if (!modal || !title || !idInput) return;
+  if (item) {
+    title.textContent = "용어 수정";
+    idInput.value = item.id;
+    document.getElementById("glossaryTermKo").value = item.termKo || "";
+    document.getElementById("glossaryTermEn").value = item.termEn || "";
+    document.getElementById("glossaryDescription").value = item.description || "";
+  } else {
+    title.textContent = "용어 추가";
+    idInput.value = "";
+    document.getElementById("glossaryForm").reset();
+  }
+  modal.setAttribute("aria-hidden", "false");
+  modal.classList.add("modal--open");
+  document.getElementById("glossaryTermKo").focus();
+}
+
+function closeGlossaryModal() {
+  const modal = document.getElementById("glossaryModal");
+  if (modal) {
+    modal.setAttribute("aria-hidden", "true");
+    modal.classList.remove("modal--open");
+  }
+}
+
+function wireKnowhow() {
+  const btnAdd = document.getElementById("btnAddGlossary");
+  const form = document.getElementById("glossaryForm");
+  const closeBtn = document.getElementById("glossaryModalClose");
+  const backdrop = document.getElementById("glossaryModalBackdrop");
+  if (btnAdd) btnAdd.addEventListener("click", () => openGlossaryModal(null));
+  if (closeBtn) closeBtn.addEventListener("click", closeGlossaryModal);
+  if (backdrop) backdrop.addEventListener("click", closeGlossaryModal);
+  document.querySelectorAll("#content .btn-edit[data-id]").forEach((btn) => {
+    if (btn.closest("[data-glossary-id]")) {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.id;
+        const g = getGlossary().find((x) => x.id === id);
+        if (g) openGlossaryModal(g);
+      });
+    }
+  });
+  document.querySelectorAll("#content .btn-delete[data-id]").forEach((btn) => {
+    if (btn.closest("[data-glossary-id]")) {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.id;
+        if (!confirm("이 용어를 삭제할까요?")) return;
+        deleteGlossaryItem(id);
+        render();
+      });
+    }
+  });
+  if (form) {
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const id = document.getElementById("glossaryId").value.trim();
+      const termKo = document.getElementById("glossaryTermKo").value.trim();
+      const termEn = document.getElementById("glossaryTermEn").value.trim();
+      const description = document.getElementById("glossaryDescription").value.trim();
+      if (!termKo) return;
+      const data = { termKo, termEn, description };
+      if (id) updateGlossaryItem(id, data);
+      else addGlossaryItem(data);
+      closeGlossaryModal();
+      render();
+    });
+  }
+}
+
 const ROUTES = {
   notices: {
     title: "주요 공지사항",
@@ -407,92 +838,13 @@ const ROUTES = {
   },
   contacts: {
     title: "업무 연락망",
-    desc: "센터/팀/담당자 연락처 및 에스컬레이션 체계를 정리합니다.",
-    render: () => `
-      <div class="grid">
-        <div class="card card--full">
-          <h3 class="card__title">연락망</h3>
-          <div class="card__body" style="margin-bottom:10px;">개인정보는 실제 적용 시 사내 정책에 맞춰 처리해 주세요.</div>
-          <table class="table">
-            <thead>
-              <tr><th>구분</th><th>팀</th><th>담당</th><th>연락</th><th>비고</th></tr>
-            </thead>
-            <tbody>
-              <tr><td>운영</td><td>출고</td><td>홍길동</td><td>내선 1234</td><td>긴급 이슈 1차</td></tr>
-              <tr><td>운영</td><td>입고</td><td>김영희</td><td>내선 2345</td><td>입고 일정</td></tr>
-              <tr><td>시스템</td><td>WMS</td><td>박철수</td><td>내선 3456</td><td>장애 대응</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    `,
+    desc: "구분·업체·담당자 연락처를 관리합니다. 추가·수정·삭제가 가능합니다.",
+    render: renderContactsTab,
   },
   knowhow: {
     title: "업무 노하우 공유",
     desc: "물류 용어집과 업무 노하우를 문서화해 공유합니다.",
-    render: () => `
-      <div class="grid">
-        <div class="card card--full">
-          <h3 class="card__title">물류 용어집</h3>
-          <div class="card__body" style="margin-bottom:12px;">입·출고, 재고, 피킹, KGSP, 콜드체인 등 자주 쓰는 용어를 정리했습니다.</div>
-          <div class="table-wrap">
-            <table class="table table--glossary">
-              <thead>
-                <tr>
-                  <th style="width:180px;">용어(한글)</th>
-                  <th style="width:200px;">용어(영어)</th>
-                  <th>설명</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr><td>입/출고</td><td>IB/OB (Inbound/Outbound)</td><td>입고(IB)는 상품이 물류센터로 들어오는 프로세스, 출고(OB)는 주문에 따라 상품이 센터에서 외부로 나가는 프로세스를 의미</td></tr>
-                <tr><td>재고</td><td>Inventory</td><td>현재 물류센터에 보관 중인 상품 수량</td></tr>
-                <tr><td>가용재고</td><td>Available Stock</td><td>주문 가능한 재고 (불량·홀드 재고 제외)</td></tr>
-                <tr><td>상품관리단위 (스큐)</td><td>SKU (Stock Keeping Unit)</td><td>재고 관리를 위해 상품의 종류·규격·포장·속성별로 구분한 최소 관리 단위. 예) 우루사라는 상품이 있지만 100mg / 400mg 규격이 있으면 규격단위가 SKU 임 (=상품코드 단위)</td></tr>
-                <tr><td>피킹 (집품)</td><td>Picking</td><td>주문에 따라 로케이션에서 상품을 집품하는 작업</td></tr>
-                <tr><td>패킹 (포장)</td><td>Packing</td><td>피킹된 상품을 포장하여 출고 준비하는 작업</td></tr>
-                <tr><td>입하</td><td>Receiving / Inbound Receiving</td><td>외부(공급처·제조사)에서 물류센터로 상품이 실제 도착하여 입고를 대기함</td></tr>
-                <tr><td>출하</td><td>Shipping / Outbound Shipping</td><td>주문 또는 출고 지시에 따라 상품을 집품·포장하여 물류센터에서 외부로 출발시키는 과정</td></tr>
-                <tr><td>로케이션</td><td>Loc (Location)</td><td>물류센터 내 상품이 적치되는 물리적 위치 주소 (예: Zone–Rack–Shelf–Bin 단위로 관리) → 피킹지에 표기되는 위치주소값</td></tr>
-                <tr><td>존 (구역)</td><td>Zone</td><td>일반적으로 센터 내, 층 내에서 특정 구역을 가리킴 (Sector)</td></tr>
-                <tr><td>선입선출/선출선입</td><td>FIFO/FEFO</td><td>FIFO: 먼저 입고된 재고를 먼저 출고. FEFO: 유통기한이 빠른 재고를 우선 출고 (식품·의약품 필수)</td></tr>
-                <tr><td>적격성 평가 (밸리데이션)</td><td>Validation</td><td>프로세스·시스템·설비가 의도한 목적에 맞게 일관되게 작동함을 검증하는 절차 (의약·콜드체인 핵심 개념). 사전 프로토콜(상세계획) 수립 → 밸리데이션 수행 → 리포트 작성/승인 절차로 진행됨</td></tr>
-                <tr><td>표준운영절차</td><td>SOP (Standard Operating Procedure)</td><td>물류 업무(입하·보관·피킹·출하 등)를 일관된 방식으로 수행하기 위해 단계별로 정의한 표준 업무 절차 문서</td></tr>
-                <tr><td>KGSP</td><td>KGSP (Korea Good Supply Practice)</td><td>의약품의 보관·수송 과정에서 품질과 안전성을 유지하기 위한 국내 우수유통관리기준. 의약품 유통을 위해서는 창고가 KGSP 적격업소 지정을 받아야 함</td></tr>
-                <tr><td>KGSP 기준서</td><td>KGSP Guideline / Manual</td><td>KGSP 요건을 충족하기 위해 시설·설비·운영·관리 기준을 문서화한 내부 기준 문서</td></tr>
-                <tr><td>콜드체인</td><td>Cold Chain</td><td>의약품·식품 등을 정해진 저온 범위에서 보관·운송·출하하는 온도 관리 물류 체계. 이지메디컴에서는 냉장(2-8도) / 초저온 (-80도 이하) 으로 운영 중</td></tr>
-                <tr><td>검·교정</td><td>Calibration / Verification</td><td>계측 장비가 정확한 값을 측정하는지 확인(검증)하고 기준에 맞게 조정하는 절차. 유효기간이 1년이므로 지정된 장비는 1년마다 수행해야 함 (온도로거 등)</td></tr>
-                <tr><td>파레트랙</td><td>Pallet Rack</td><td>파레트 단위 상품을 지게차로 적치·보관하기 위한 중량용 랙 시스템</td></tr>
-                <tr><td>선반랙</td><td>Shelf Rack</td><td>박스·소형 단위 상품을 수작업으로 보관·피킹하기 위한 선반 랙. 내하중에 따라 경량랙, 중량랙이 있음 구매 진행 시 하중을 고려하여 설계</td></tr>
-                <tr><td>풀필먼트</td><td>Fulfillment</td><td>주문 접수부터 보관·피킹·패킹·출하·반품까지 일괄 처리하는 물류 서비스. 3PL의 확대 개념이며 일반적으로 플랫폼(약국몰, 병원몰, 네스스, 쿠팡 등) 주문관리부터 CS까지 관여함</td></tr>
-                <tr><td>3PL</td><td>3PL (Third Party Logistics)</td><td>기업의 물류 업무를 외부 전문 물류업체가 대행하는 운영 방식. 일반적으로 화주사-유통사 관계를 말하고 위탁물류(사입X)를 수행하는 방식</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <div class="card card--wide">
-          <h3 class="card__title">업무 노하우</h3>
-          <div class="card__body">
-            <b>피크 대응 체크리스트</b><br/>
-            1) 물동량 예측 확인<br/>
-            2) 인력 배치/교대 계획<br/>
-            3) 병목 공정 사전 점검(피킹/포장/출고)<br/>
-            <div class="muted" style="margin-top:10px;">문서/링크 형태로 확장 가능</div>
-          </div>
-        </div>
-        <div class="card card--full">
-          <h3 class="card__title">문서 목록</h3>
-          <table class="table">
-            <thead><tr><th>카테고리</th><th>제목</th><th>업데이트</th><th>상태</th></tr></thead>
-            <tbody>
-              <tr><td>표준</td><td>출고 예외 처리 가이드</td><td>2026-02-03</td><td><span class="tag good">최신</span></td></tr>
-              <tr><td>교육</td><td>신규 입고 담당자 온보딩</td><td>2026-01-27</td><td><span class="tag">유지</span></td></tr>
-              <tr><td>FAQ</td><td>반품 분류 기준</td><td>2026-01-15</td><td><span class="tag">유지</span></td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    `,
+    render: renderKnowhowTab,
   },
   feedback: {
     title: "페이지 피드백",
@@ -531,52 +883,7 @@ const ROUTES = {
       </div>
     `,
   },
-  spreadsheet: {
-    title: "스프레드시트",
-    desc: "Google 스프레드시트를 페이지에 임베드해 볼 수 있습니다.",
-    render: renderSpreadsheetTab,
-  },
 };
-
-function renderSpreadsheetTab() {
-  const url = getSpreadsheetUrl();
-  const hasUrl = url.length > 0;
-  return `
-    <div class="card card--full">
-      <h3 class="card__title">Google 스프레드시트</h3>
-      <div class="card__body" style="margin-bottom:14px;">
-        <p class="muted" style="margin:0 0 12px;">아래에 링크를 입력하고 저장하면 시트가 이 페이지에 임베드됩니다. Google 스프레드시트에서 <strong>파일 → 공유 → 웹에 게시</strong> 후 나오는 주소(또는 삽입 → iframe용 주소)를 사용하세요.</p>
-        <form id="spreadsheetForm" class="spreadsheet-form" style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
-          <div style="flex:1; min-width:200px;">
-            <label class="form__label" for="spreadsheetUrlInput">스프레드시트 링크</label>
-            <input type="url" id="spreadsheetUrlInput" class="form__input" placeholder="https://docs.google.com/spreadsheets/d/e/.../pubhtml" value="${escapeHtml(url)}" />
-          </div>
-          <button type="submit" class="btn btn--primary">저장 후 표시</button>
-        </form>
-      </div>
-      ${hasUrl ? `
-        <div class="embed-wrap">
-          <iframe title="Google 스프레드시트" class="embed-iframe" src="${escapeHtml(url)}"></iframe>
-        </div>
-      ` : `
-        <div class="embed-placeholder muted">링크를 저장하면 위에 스프레드시트가 표시됩니다.</div>
-      `}
-    </div>
-  `;
-}
-
-function wireSpreadsheet() {
-  const form = document.getElementById("spreadsheetForm");
-  if (form) {
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const input = document.getElementById("spreadsheetUrlInput");
-      const value = (input && input.value || "").trim();
-      setSpreadsheetUrl(value);
-      render();
-    });
-  }
-}
 
 function getRouteFromHash() {
   const hash = (location.hash || "#notices").replace("#", "").trim();
@@ -597,7 +904,8 @@ function render() {
   document.getElementById("content").innerHTML = route.render();
   setActiveNav(routeKey);
   if (routeKey === "notices") wireNotices();
-  if (routeKey === "spreadsheet") wireSpreadsheet();
+  if (routeKey === "contacts") wireContacts();
+  if (routeKey === "knowhow") wireKnowhow();
   if (routeKey === "centers") setTimeout(initCentersMap, 80);
 }
 

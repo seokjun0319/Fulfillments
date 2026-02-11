@@ -288,6 +288,22 @@ body{
 .table--glossary td:first-child{ font-weight: 600; color: var(--text); }
 .table--glossary td:nth-child(2){ color: var(--muted); }
 
+.table-actions{ white-space: nowrap; }
+.table-actions .btn-icon{
+  padding: 4px 8px;
+  margin: 0 2px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+}
+.table-actions .btn-icon:hover{ color: var(--brand); background: rgba(0, 122, 204, 0.08); }
+.table-actions .btn-delete:hover{ color: var(--bad); background: rgba(225, 29, 72, 0.08); }
+
 /* Buttons */
 .btn{
   padding: 10px 16px;
