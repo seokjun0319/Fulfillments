@@ -1,7 +1,7 @@
 const NOTICES_KEY = "fulfillment-notices";
 const CONTACTS_KEY = "fulfillment-contacts";
 const GEMINI_API_KEY_KEY = "fulfillment-gemini-api-key";
-const GEMINI_MODEL = "gemini-1.5-flash";
+const GEMINI_MODEL = "gemini-2.5-flash";
 const GEMINI_MAX_HISTORY = 20;
 
 function buildPageContextForChat() {
