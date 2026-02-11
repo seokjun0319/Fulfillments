@@ -1,6 +1,7 @@
 const NOTICES_KEY = "fulfillment-notices";
 const CONTACTS_KEY = "fulfillment-contacts";
 const GEMINI_API_KEY_KEY = "fulfillment-gemini-api-key";
+var DEFAULT_GEMINI_API_KEY = "AIzaSyCpuyCrEUvOlkYWiL7pJ0VD10Q7E4s6ooo";
 const GEMINI_MODEL = "gemini-2.5-flash";
 const GEMINI_MAX_HISTORY = 20;
 
@@ -944,16 +945,16 @@ function initChatBotFab() {
   var fab = document.getElementById("chatBotFab");
   var panel = document.getElementById("chatPanel");
   var closeBtn = document.getElementById("chatPanelClose");
-  var settingsBtn = document.getElementById("chatPanelSettings");
-  var settingsArea = document.getElementById("chatPanelSettingsArea");
-  var keyInput = document.getElementById("chatGeminiKey");
-  var keySaveBtn = document.getElementById("chatGeminiKeySave");
   var input = document.getElementById("chatInput");
   var sendBtn = document.getElementById("chatSend");
   var messagesEl = document.getElementById("chatMessages");
 
   function getGeminiKey() {
-    try { return localStorage.getItem(GEMINI_API_KEY_KEY) || ""; } catch (_) { return ""; }
+    try {
+      var saved = localStorage.getItem(GEMINI_API_KEY_KEY);
+      if (saved && saved.trim()) return saved.trim();
+    } catch (_) {}
+    return typeof DEFAULT_GEMINI_API_KEY === "string" ? DEFAULT_GEMINI_API_KEY : "";
   }
   function setGeminiKey(val) {
     try { localStorage.setItem(GEMINI_API_KEY_KEY, val || ""); } catch (_) {}
@@ -970,7 +971,6 @@ function initChatBotFab() {
     if (panel) {
       panel.classList.remove("chat-panel--open");
       panel.setAttribute("aria-hidden", "true");
-      if (settingsArea) settingsArea.classList.remove("is-open");
     }
   }
   function appendMsg(isUser, text, isPlaceholder) {
@@ -998,8 +998,7 @@ function initChatBotFab() {
     if (!apiKey) {
       appendMsg(true, text);
       if (input) input.value = "";
-      appendMsg(false, "API 키를 설정해 주세요. 상단 ⚙ 버튼에서 Google AI Studio 무료 키를 입력할 수 있습니다. 발급: aistudio.google.com/app/apikey");
-      if (settingsArea) settingsArea.classList.add("is-open");
+      appendMsg(false, "API 키를 사용할 수 없습니다. 관리자에게 문의해 주세요.");
       return;
     }
     appendMsg(true, text);
@@ -1044,21 +1043,6 @@ function initChatBotFab() {
 
   if (fab) fab.addEventListener("click", openPanel);
   if (closeBtn) closeBtn.addEventListener("click", closePanel);
-  if (settingsBtn && settingsArea) {
-    settingsBtn.addEventListener("click", function () {
-      settingsArea.classList.toggle("is-open");
-      if (keyInput && settingsArea.classList.contains("is-open")) {
-        keyInput.value = getGeminiKey();
-        keyInput.focus();
-      }
-    });
-  }
-  if (keySaveBtn && keyInput) {
-    keySaveBtn.addEventListener("click", function () {
-      setGeminiKey(keyInput.value.trim());
-      if (settingsArea) settingsArea.classList.remove("is-open");
-    });
-  }
   if (sendBtn) sendBtn.addEventListener("click", send);
   if (input) input.addEventListener("keydown", function (e) { if (e.key === "Enter") send(); });
 
