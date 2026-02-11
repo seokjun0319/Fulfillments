@@ -695,30 +695,10 @@ function wireKnowhow() {
 
 function renderMinigameTab() {
   return `
-    <div class="minigame-grid">
-      <div class="card card--wide">
-        <h3 class="card__title">사다리타기</h3>
-        <p class="card__body muted" style="margin-bottom:12px;">참가자와 결과를 입력한 뒤 사다리를 그린 후 결과를 확인하세요. (커피 내기 등)</p>
-        <div class="minigame-inputs">
-          <div>
-            <label class="minigame-label">참가자 (한 줄에 한 명)</label>
-            <textarea id="ladderNames" class="minigame-textarea" rows="5" placeholder="김철수\n이영희\n박지훈\n최민수"></textarea>
-          </div>
-          <div>
-            <label class="minigame-label">결과 (한 줄에 하나, 참가자 수만큼)</label>
-            <textarea id="ladderResults" class="minigame-textarea" rows="5" placeholder="내기\n안 내기\n내기\n안 내기"></textarea>
-          </div>
-        </div>
-        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
-          <button type="button" class="btn btn--primary" id="ladderDraw">사다리 그리기</button>
-          <button type="button" class="btn btn--secondary" id="ladderReveal" disabled>결과 보기</button>
-        </div>
-        <div id="ladderCanvas" class="ladder-canvas"></div>
-        <div id="ladderResultList" class="ladder-result-list"></div>
-      </div>
+    <div class="minigame-wrap">
       <div class="card card--wide">
         <h3 class="card__title">돌림판</h3>
-        <p class="card__body muted" style="margin-bottom:12px;">항목을 입력한 뒤 돌림판을 만들고 돌리세요.</p>
+        <p class="card__body muted" style="margin-bottom:12px;">항목을 입력한 뒤 돌림판을 만들고 돌리세요. (커피 내기 등)</p>
         <div style="margin-bottom:12px;">
           <label class="minigame-label">항목 (한 줄에 하나)</label>
           <textarea id="wheelItems" class="minigame-textarea" rows="4" placeholder="김철수\n이영희\n박지훈\n최민수\n한소희"></textarea>
@@ -729,7 +709,10 @@ function renderMinigameTab() {
         </div>
         <div id="wheelContainer" class="wheel-container">
           <div id="wheelPointer" class="wheel-pointer"></div>
-          <div id="wheel" class="wheel"></div>
+          <div id="wheel" class="wheel">
+            <div id="wheelInner" class="wheel-inner"></div>
+            <div id="wheelLabels" class="wheel-labels"></div>
+          </div>
         </div>
         <div id="wheelResult" class="wheel-result"></div>
       </div>
@@ -922,7 +905,7 @@ const ROUTES = {
   },
   minigame: {
     title: "미니게임",
-    desc: "사다리타기, 돌림판으로 커피 내기 등을 재미있게 정해 보세요.",
+    desc: "돌림판으로 커피 내기 등을 재미있게 정해 보세요.",
     render: renderMinigameTab,
   },
   feedback: {
@@ -992,98 +975,17 @@ function render() {
 }
 
 function wireMinigame() {
-  var ladderNamesEl = document.getElementById("ladderNames");
-  var ladderResultsEl = document.getElementById("ladderResults");
-  var ladderDrawBtn = document.getElementById("ladderDraw");
-  var ladderRevealBtn = document.getElementById("ladderReveal");
-  var ladderCanvas = document.getElementById("ladderCanvas");
-  var ladderResultList = document.getElementById("ladderResultList");
-  var ladderData = null;
-
-  if (ladderDrawBtn && ladderCanvas) {
-    ladderDrawBtn.addEventListener("click", function () {
-      var namesText = (ladderNamesEl && ladderNamesEl.value || "").trim();
-      var resultsText = (ladderResultsEl && ladderResultsEl.value || "").trim();
-      var names = namesText.split(/\n/).map(function (s) { return s.trim(); }).filter(Boolean);
-      var results = resultsText.split(/\n/).map(function (s) { return s.trim(); }).filter(Boolean);
-      if (names.length < 2) {
-        alert("참가자는 2명 이상 입력해 주세요.");
-        return;
-      }
-      if (results.length === 0) {
-        alert("결과를 1개 이상 입력해 주세요.");
-        return;
-      }
-      while (results.length < names.length) results.push(results[results.length % results.length]);
-      var n = names.length;
-      var levels = 6 + Math.floor(n * 1.5);
-      var rungs = [];
-      for (var L = 0; L < levels; L++) {
-        for (var i = 0; i < n - 1; i++) {
-          if (Math.random() < 0.45 && (L === 0 || !rungs.some(function (r) { return r.level === L - 1 && (r.left === i || r.left === i - 1 || r.left === i + 1); }))) {
-            rungs.push({ level: L, left: i });
-          }
-        }
-      }
-      var map = [];
-      for (var start = 0; start < n; start++) {
-        var pos = start;
-        for (var l = 0; l < levels; l++) {
-          var r = rungs.find(function (x) { return x.level === l && (x.left === pos - 1 || x.left === pos); });
-          if (r && r.left === pos - 1) pos--;
-          else if (r && r.left === pos) pos++;
-        }
-        map[start] = pos;
-      }
-      ladderData = { names: names, results: results, n: n, levels: levels, rungs: rungs, map: map };
-      var w = 280;
-      var h = 40 + levels * 24;
-      var colW = w / (n + 1);
-      var rowH = 24;
-      var svg = '<svg class="ladder-svg" viewBox="0 0 ' + (w + 120) + ' ' + (h + 80) + '" xmlns="http://www.w3.org/2000/svg">';
-      for (var i = 0; i < n; i++) {
-        var x = 60 + colW * (i + 0.5);
-        svg += '<text x="' + x + '" y="24" class="ladder-name" text-anchor="middle">' + escapeHtml(names[i]) + '</text>';
-        svg += '<line x1="' + (60 + colW * (i + 1)) + '" y1="36" x2="' + (60 + colW * (i + 1)) + '" y2="' + (36 + levels * rowH) + '" stroke="#444" stroke-width="2"/>';
-      }
-      for (var j = 0; j < n; j++) {
-        var rx = 60 + colW * (j + 0.5);
-        svg += '<text x="' + rx + '" y="' + (38 + levels * rowH + 22) + '" class="ladder-result" text-anchor="middle">' + escapeHtml(results[j] || "") + '</text>';
-      }
-      rungs.forEach(function (r) {
-        var x1 = 60 + colW * (r.left + 1);
-        var x2 = 60 + colW * (r.left + 2);
-        var y = 36 + (r.level + 0.5) * rowH;
-        svg += '<line x1="' + x1 + '" y1="' + y + '" x2="' + x2 + '" y2="' + y + '" stroke="#007ACC" stroke-width="3"/>';
-      });
-      svg += "</svg>";
-      ladderCanvas.innerHTML = svg;
-      ladderResultList.innerHTML = "";
-      ladderRevealBtn.disabled = false;
-    });
-  }
-  if (ladderRevealBtn && ladderResultList) {
-    ladderRevealBtn.addEventListener("click", function () {
-      if (!ladderData) return;
-      var html = '<div class="ladder-result-title">결과</div><ul class="ladder-result-ul">';
-      ladderData.names.forEach(function (name, i) {
-        var res = ladderData.results[ladderData.map[i]];
-        html += "<li><strong>" + escapeHtml(name) + "</strong> → " + escapeHtml(res) + "</li>";
-      });
-      html += "</ul>";
-      ladderResultList.innerHTML = html;
-    });
-  }
-
   var wheelItemsEl = document.getElementById("wheelItems");
   var wheelCreateBtn = document.getElementById("wheelCreate");
   var wheelSpinBtn = document.getElementById("wheelSpin");
   var wheelEl = document.getElementById("wheel");
+  var wheelInner = document.getElementById("wheelInner");
+  var wheelLabels = document.getElementById("wheelLabels");
   var wheelResultEl = document.getElementById("wheelResult");
   var wheelItems = [];
   var wheelRotation = 0;
 
-  if (wheelCreateBtn && wheelEl) {
+  if (wheelCreateBtn && wheelEl && wheelInner && wheelLabels) {
     wheelCreateBtn.addEventListener("click", function () {
       var text = (wheelItemsEl && wheelItemsEl.value || "").trim();
       wheelItems = text.split(/\n/).map(function (s) { return s.trim(); }).filter(Boolean);
@@ -1097,13 +999,28 @@ function wireMinigame() {
       for (var i = 0; i < n; i++) {
         parts.push("hsl(" + (200 + (i * 40) % 160) + ", 55%, 48%) " + (i * segmentAngle) + "deg " + ((i + 1) * segmentAngle) + "deg");
       }
-      wheelEl.innerHTML = "";
-      wheelEl.style.background = "conic-gradient(" + parts.join(", ") + ")";
-      wheelEl.setAttribute("data-count", n);
-      wheelEl.dataset.segmentAngle = segmentAngle;
+      wheelInner.style.background = "conic-gradient(" + parts.join(", ") + ")";
+      wheelLabels.innerHTML = "";
+      for (var i = 0; i < n; i++) {
+        var angleDeg = (i + 0.5) * segmentAngle;
+        var angleRad = (angleDeg - 90) * Math.PI / 180;
+        var r = 38;
+        var left = 50 + r * Math.cos(angleRad);
+        var top = 50 + r * Math.sin(angleRad);
+        var span = document.createElement("span");
+        span.className = "wheel-label";
+        span.textContent = wheelItems[i];
+        span.style.left = left + "%";
+        span.style.top = top + "%";
+        span.style.transform = "translate(-50%, -50%) rotate(" + angleDeg + "deg)";
+        wheelLabels.appendChild(span);
+      }
       wheelResultEl.textContent = "";
+      wheelResultEl.classList.remove("is-visible");
       wheelSpinBtn.disabled = false;
       wheelRotation = 0;
+      wheelEl.style.transition = "none";
+      wheelEl.style.transform = "rotate(0deg)";
     });
   }
   if (wheelSpinBtn && wheelEl && wheelResultEl) {
