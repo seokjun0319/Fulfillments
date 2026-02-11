@@ -337,22 +337,22 @@ const ROUTES = {
     desc: "물류센터 현황과 조직도를 공유합니다.",
     render: () => `
       <div class="grid">
-        <div class="card card--wide">
+        <div class="card card--half">
           <h3 class="card__title">물류센터 위치</h3>
           <p class="card__body muted" style="margin-bottom:10px;">주소지 기준 로케이션입니다. 마커를 클릭하면 명칭·주소를 볼 수 있습니다.</p>
           <div id="centers-map" class="centers-map"></div>
         </div>
-        <div class="card card--wide">
+        <div class="card card--half">
           <h3 class="card__title">물류센터 현황</h3>
           <div class="embed-wrap centers-embed">
-            <iframe title="물류센터 스프레드시트" class="embed-iframe" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQBx93IwWKNm0DAPbFMIAsoVGOBzq9HuypzC971C4pMMnAjYa8j2fPdZ6khtk79ovLI-me9mwUyQDpC/pubhtml?widget=true&amp;headers=false"></iframe>
+            <iframe title="물류센터 스프레드시트" class="embed-iframe" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQBx93IwWKNm0DAPbFMIAsoVGOBzq9HuypzC971C4pMMnAjYa8j2fPdZ6khtk79ovLI-me9mwUyQDpC/pubhtml"></iframe>
           </div>
           <p class="muted" style="margin-top:8px; font-size:12px;">시트가 보이지 않으면 <a href="https://docs.google.com/spreadsheets/d/1DiFDr5BMGCX_8nIHhKAYhXmBSHObmRW9xFZpuqBPxp4/edit?usp=sharing" target="_blank" rel="noopener">이 링크</a>로 열어 보세요.</p>
         </div>
         <div class="card card--full">
           <h3 class="card__title">조직도</h3>
           <div class="embed-wrap" style="margin-top:10px;">
-            <iframe title="조직도 스프레드시트" class="embed-iframe" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vTqEhx3bsog9At6U6Yowe0kXzEln7Pa5JdZti6JjZ1wOCySX2WqbxqnQ1l-fOsibLAesE4jEjDS6Qto/pubhtml?widget=true&amp;headers=false"></iframe>
+            <iframe title="조직도 스프레드시트" class="embed-iframe" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vTqEhx3bsog9At6U6Yowe0kXzEln7Pa5JdZti6JjZ1wOCySX2WqbxqnQ1l-fOsibLAesE4jEjDS6Qto/pubhtml"></iframe>
           </div>
         </div>
       </div>

@@ -220,6 +220,7 @@ body{
   box-shadow: 0 10px 26px rgba(0, 0, 0, 0.05);
 }
 .card--wide{ grid-column: span 8; }
+.card--half{ grid-column: span 6; }
 .card--full{ grid-column: span 12; }
 
 .card__title{
@@ -435,6 +436,7 @@ body{
   .sidebar{ width: 270px; }
   .card{ grid-column: span 12; }
   .card--wide{ grid-column: span 12; }
+  .card--half{ grid-column: span 12; }
   .search input{ width: 45vw; }
 }
 
