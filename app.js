@@ -1,4 +1,14 @@
 const NOTICES_KEY = "fulfillment-notices";
+const SPREADSHEET_URL_KEY = "fulfillment-spreadsheet-url";
+
+function getSpreadsheetUrl() {
+  return localStorage.getItem(SPREADSHEET_URL_KEY) || "";
+}
+function setSpreadsheetUrl(url) {
+  if (url && url.trim()) localStorage.setItem(SPREADSHEET_URL_KEY, url.trim());
+  else localStorage.removeItem(SPREADSHEET_URL_KEY);
+}
+
 
 const DEFAULT_NOTICES = [
   { id: "1", category: "운영", title: "반품 입고 기준 변경", body: "센터별 반품 입고 기준이 변경되었습니다. 자세한 내용은 첨부를 확인해 주세요.", createdAt: "2026-02-08", status: "공지중" },
@@ -72,9 +82,9 @@ function renderNoticesTab() {
       <div class="card">
         <h3 class="card__title">바로가기</h3>
         <div class="card__body">
-          - 공지 작성/승인 프로세스(더미)<br/>
-          - 변경 이력(더미)<br/>
-          - 자주 묻는 질문(더미)
+          - 공지 작성/승인 프로세스<br/>
+          - 변경 이력<br/>
+          - 자주 묻는 질문
         </div>
       </div>
       <div class="card card--full">
@@ -197,7 +207,7 @@ const ROUTES = {
     render: () => `
       <div class="grid">
         <div class="card card--wide">
-          <h3 class="card__title">핵심 지표 (더미)</h3>
+          <h3 class="card__title">핵심 지표</h3>
           <div class="card__body">실데이터 연동 전까지는 레이아웃/카드 구성만 둡니다.</div>
           <div class="kpis">
             <div class="pill">
@@ -224,7 +234,7 @@ const ROUTES = {
         </div>
         <div class="card">
           <h3 class="card__title">차트 영역</h3>
-          <div class="card__body">라인/바 차트가 들어갈 자리 (더미)</div>
+          <div class="card__body">라인/바 차트가 들어갈 자리</div>
           <div style="height:140px; margin-top:10px; border-radius: 14px; border:1px dashed rgba(255,255,255,0.18); background: rgba(0,0,0,0.12);"></div>
         </div>
         <div class="card card--full">
@@ -251,7 +261,7 @@ const ROUTES = {
     render: () => `
       <div class="grid">
         <div class="card card--wide">
-          <h3 class="card__title">입력(더미)</h3>
+          <h3 class="card__title">입력</h3>
           <div class="card__body">
             <div style="display:grid; grid-template-columns: repeat(12, 1fr); gap: 10px; margin-top: 10px;">
               <div style="grid-column: span 6;">
@@ -270,7 +280,7 @@ const ROUTES = {
           </div>
         </div>
         <div class="card">
-          <h3 class="card__title">결과(더미)</h3>
+          <h3 class="card__title">결과</h3>
           <div class="card__body">
             <div class="kpis">
               <div class="pill"><div class="pill__k">필요 인력</div><div class="pill__v">43명</div><div class="pill__s"><span class="tag">추정</span></div></div>
@@ -279,7 +289,7 @@ const ROUTES = {
           </div>
         </div>
         <div class="card card--full">
-          <h3 class="card__title">그래프 자리(더미)</h3>
+          <h3 class="card__title">그래프 자리</h3>
           <div style="height:200px; border-radius: 14px; border:1px dashed rgba(255,255,255,0.18); background: rgba(0,0,0,0.12);"></div>
         </div>
       </div>
@@ -291,7 +301,7 @@ const ROUTES = {
     render: () => `
       <div class="grid">
         <div class="card card--wide">
-          <h3 class="card__title">물류센터 현황 (더미)</h3>
+          <h3 class="card__title">물류센터 현황</h3>
           <table class="table">
             <thead>
               <tr><th>센터</th><th>지역</th><th>주요 역할</th><th>상태</th></tr>
@@ -303,14 +313,10 @@ const ROUTES = {
             </tbody>
           </table>
         </div>
-        <div class="card">
-          <h3 class="card__title">조직도 (더미)</h3>
-          <div class="card__body">
-            사업부장<br/>
-            ├ 운영팀<br/>
-            ├ 기획/성과관리<br/>
-            └ 시스템/자동화<br/>
-            <div class="muted" style="margin-top:10px;">이미지/도식은 추후 교체</div>
+        <div class="card card--full">
+          <h3 class="card__title">조직도</h3>
+          <div class="embed-wrap" style="margin-top:10px;">
+            <iframe title="조직도 스프레드시트" class="embed-iframe" src="https://docs.google.com/spreadsheets/d/1MacPbrhbBbOFM7p6mbDiOn6eC0iBop2rms_f7uti-_M/pubhtml?widget=true&amp;headers=false"></iframe>
           </div>
         </div>
       </div>
@@ -324,7 +330,7 @@ const ROUTES = {
         <div class="card card--full">
           <h3 class="card__title">한 줄 소개</h3>
           <div class="card__body">
-            <b>[더미]</b> 의료/헬스케어 특성에 맞춘 안정적인 풀필먼트 운영과 데이터 기반 개선을 제공합니다.
+            의료/헬스케어 특성에 맞춘 안정적인 풀필먼트 운영과 데이터 기반 개선을 제공합니다.
           </div>
         </div>
         <div class="card">
@@ -348,7 +354,7 @@ const ROUTES = {
     render: () => `
       <div class="grid">
         <div class="card card--full">
-          <h3 class="card__title">진행 현황 (더미)</h3>
+          <h3 class="card__title">진행 현황</h3>
           <table class="table">
             <thead>
               <tr><th>과제</th><th>담당</th><th>기한</th><th>상태</th><th>메모</th></tr>
@@ -369,8 +375,8 @@ const ROUTES = {
     render: () => `
       <div class="grid">
         <div class="card card--full">
-          <h3 class="card__title">연락망 (더미)</h3>
-          <div class="card__body" style="margin-bottom:10px;">개인정보는 실제 적용 시 사내 정책에 맞춰 처리 필요</div>
+          <h3 class="card__title">연락망</h3>
+          <div class="card__body" style="margin-bottom:10px;">개인정보는 실제 적용 시 사내 정책에 맞춰 처리해 주세요.</div>
           <table class="table">
             <thead>
               <tr><th>구분</th><th>팀</th><th>담당</th><th>연락</th><th>비고</th></tr>
@@ -429,7 +435,7 @@ const ROUTES = {
           </div>
         </div>
         <div class="card card--wide">
-          <h3 class="card__title">업무 노하우 (더미)</h3>
+          <h3 class="card__title">업무 노하우</h3>
           <div class="card__body">
             <b>피크 대응 체크리스트</b><br/>
             1) 물동량 예측 확인<br/>
@@ -439,13 +445,13 @@ const ROUTES = {
           </div>
         </div>
         <div class="card card--full">
-          <h3 class="card__title">문서 목록(더미)</h3>
+          <h3 class="card__title">문서 목록</h3>
           <table class="table">
             <thead><tr><th>카테고리</th><th>제목</th><th>업데이트</th><th>상태</th></tr></thead>
             <tbody>
-              <tr><td>표준</td><td>[더미] 출고 예외 처리 가이드</td><td>2026-02-03</td><td><span class="tag good">최신</span></td></tr>
-              <tr><td>교육</td><td>[더미] 신규 입고 담당자 온보딩</td><td>2026-01-27</td><td><span class="tag">유지</span></td></tr>
-              <tr><td>FAQ</td><td>[더미] 반품 분류 기준</td><td>2026-01-15</td><td><span class="tag">유지</span></td></tr>
+              <tr><td>표준</td><td>출고 예외 처리 가이드</td><td>2026-02-03</td><td><span class="tag good">최신</span></td></tr>
+              <tr><td>교육</td><td>신규 입고 담당자 온보딩</td><td>2026-01-27</td><td><span class="tag">유지</span></td></tr>
+              <tr><td>FAQ</td><td>반품 분류 기준</td><td>2026-01-15</td><td><span class="tag">유지</span></td></tr>
             </tbody>
           </table>
         </div>
@@ -458,7 +464,7 @@ const ROUTES = {
     render: () => `
       <div class="grid">
         <div class="card card--wide">
-          <h3 class="card__title">요청사항 설문 (더미)</h3>
+          <h3 class="card__title">요청사항 설문</h3>
           <div class="card__body">
             <div style="margin-top:10px; display:grid; gap:10px;">
               <div>
@@ -467,7 +473,7 @@ const ROUTES = {
               </div>
               <div>
                 <div class="muted" style="margin-bottom:6px;">상세 내용</div>
-                <div style="height:120px; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.04);">[더미] 어디에/왜/원하는 결과</div>
+                <div style="height:120px; padding:10px 12px; border-radius:12px; border:1px solid var(--border); background: var(--surface-2);">어디에/왜/원하는 결과를 입력해 주세요.</div>
               </div>
               <div style="display:flex; gap:10px; flex-wrap:wrap;">
                 <span class="tag">기능 개선</span>
@@ -479,7 +485,7 @@ const ROUTES = {
           </div>
         </div>
         <div class="card">
-          <h3 class="card__title">우선순위(더미)</h3>
+          <h3 class="card__title">우선순위</h3>
           <div class="card__body">
             <span class="tag good">높음</span>
             <span class="tag warn">중간</span>
@@ -489,7 +495,52 @@ const ROUTES = {
       </div>
     `,
   },
+  spreadsheet: {
+    title: "스프레드시트",
+    desc: "Google 스프레드시트를 페이지에 임베드해 볼 수 있습니다.",
+    render: renderSpreadsheetTab,
+  },
 };
+
+function renderSpreadsheetTab() {
+  const url = getSpreadsheetUrl();
+  const hasUrl = url.length > 0;
+  return `
+    <div class="card card--full">
+      <h3 class="card__title">Google 스프레드시트</h3>
+      <div class="card__body" style="margin-bottom:14px;">
+        <p class="muted" style="margin:0 0 12px;">아래에 링크를 입력하고 저장하면 시트가 이 페이지에 임베드됩니다. Google 스프레드시트에서 <strong>파일 → 공유 → 웹에 게시</strong> 후 나오는 주소(또는 삽입 → iframe용 주소)를 사용하세요.</p>
+        <form id="spreadsheetForm" class="spreadsheet-form" style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+          <div style="flex:1; min-width:200px;">
+            <label class="form__label" for="spreadsheetUrlInput">스프레드시트 링크</label>
+            <input type="url" id="spreadsheetUrlInput" class="form__input" placeholder="https://docs.google.com/spreadsheets/d/e/.../pubhtml" value="${escapeHtml(url)}" />
+          </div>
+          <button type="submit" class="btn btn--primary">저장 후 표시</button>
+        </form>
+      </div>
+      ${hasUrl ? `
+        <div class="embed-wrap">
+          <iframe title="Google 스프레드시트" class="embed-iframe" src="${escapeHtml(url)}"></iframe>
+        </div>
+      ` : `
+        <div class="embed-placeholder muted">링크를 저장하면 위에 스프레드시트가 표시됩니다.</div>
+      `}
+    </div>
+  `;
+}
+
+function wireSpreadsheet() {
+  const form = document.getElementById("spreadsheetForm");
+  if (form) {
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const input = document.getElementById("spreadsheetUrlInput");
+      const value = (input && input.value || "").trim();
+      setSpreadsheetUrl(value);
+      render();
+    });
+  }
+}
 
 function getRouteFromHash() {
   const hash = (location.hash || "#notices").replace("#", "").trim();
@@ -510,6 +561,7 @@ function render() {
   document.getElementById("content").innerHTML = route.render();
   setActiveNav(routeKey);
   if (routeKey === "notices") wireNotices();
+  if (routeKey === "spreadsheet") wireSpreadsheet();
 }
 
 function wireDummySearch() {
@@ -518,7 +570,7 @@ function wireDummySearch() {
   const run = () => {
     const q = (input.value || "").trim();
     if (!q) return;
-    alert(`(더미) 검색어: ${q}\n실제 검색은 추후 데이터 연동 시 구현합니다.`);
+    alert(`검색어: ${q}\n실제 검색은 추후 데이터 연동 시 구현합니다.`);
   };
   btn.addEventListener("click", run);
   input.addEventListener("keydown", (e) => {
