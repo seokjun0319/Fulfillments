@@ -345,14 +345,14 @@ const ROUTES = {
         <div class="card card--wide">
           <h3 class="card__title">물류센터 현황</h3>
           <div class="embed-wrap centers-embed">
-            <iframe title="물류센터 스프레드시트" class="embed-iframe" src="https://docs.google.com/spreadsheets/d/1DiFDr5BMGCX_8nIHhKAYhXmBSHObmRW9xFZpuqBPxp4/pubhtml?widget=true&amp;headers=false"></iframe>
+            <iframe title="물류센터 스프레드시트" class="embed-iframe" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQBx93IwWKNm0DAPbFMIAsoVGOBzq9HuypzC971C4pMMnAjYa8j2fPdZ6khtk79ovLI-me9mwUyQDpC/pubhtml?widget=true&amp;headers=false"></iframe>
           </div>
           <p class="muted" style="margin-top:8px; font-size:12px;">시트가 보이지 않으면 <a href="https://docs.google.com/spreadsheets/d/1DiFDr5BMGCX_8nIHhKAYhXmBSHObmRW9xFZpuqBPxp4/edit?usp=sharing" target="_blank" rel="noopener">이 링크</a>로 열어 보세요.</p>
         </div>
         <div class="card card--full">
           <h3 class="card__title">조직도</h3>
           <div class="embed-wrap" style="margin-top:10px;">
-            <iframe title="조직도 스프레드시트" class="embed-iframe" src="https://docs.google.com/spreadsheets/d/1MacPbrhbBbOFM7p6mbDiOn6eC0iBop2rms_f7uti-_M/pubhtml?widget=true&amp;headers=false"></iframe>
+            <iframe title="조직도 스프레드시트" class="embed-iframe" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vTqEhx3bsog9At6U6Yowe0kXzEln7Pa5JdZti6JjZ1wOCySX2WqbxqnQ1l-fOsibLAesE4jEjDS6Qto/pubhtml?widget=true&amp;headers=false"></iframe>
           </div>
         </div>
       </div>
