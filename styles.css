@@ -312,6 +312,7 @@ body{
 .chat-msg--user .chat-msg__label{ color: var(--accent); }
 .chat-msg__text{ margin: 0; padding: 10px 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); font-size: 14px; line-height: 1.5; max-width: 85%; }
 .chat-msg--user .chat-msg__text{ background: rgba(0, 122, 204, 0.08); border-color: rgba(0, 122, 204, 0.2); }
+.chat-msg--loading .chat-msg__text{ color: var(--muted); }
 .chat-input-wrap{ display: flex; gap: 10px; padding: 12px 14px; border-top: 1px solid var(--border); background: var(--surface); }
 .chat-input{ flex: 1; padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border); font-size: 14px; }
 .chat-input:focus{ outline: none; border-color: var(--brand); }
@@ -410,6 +411,14 @@ body{
   border-radius: var(--radius) var(--radius) 0 0;
 }
 .chat-panel__title{ font-weight: 700; font-size: 14px; }
+.chat-panel__head-actions{ display: flex; align-items: center; gap: 4px; }
+.chat-panel__settings-btn{
+  width: 32px; height: 32px;
+  border: none; background: transparent;
+  font-size: 16px; color: var(--muted);
+  cursor: pointer; border-radius: 8px; padding: 0;
+}
+.chat-panel__settings-btn:hover{ color: var(--text); background: rgba(0,0,0,0.06); }
 .chat-panel__close{
   width: 32px;
   height: 32px;
@@ -423,6 +432,21 @@ body{
   padding: 0;
 }
 .chat-panel__close:hover{ color: var(--text); background: rgba(0,0,0,0.06); }
+.chat-panel__settings{
+  display: none;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-1);
+}
+.chat-panel__settings.is-open{ display: block; }
+.chat-panel__settings-label{ display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.chat-panel__settings-input{
+  width: 100%; padding: 8px 10px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 13px; margin-bottom: 6px;
+}
+.chat-panel__settings-link{ font-size: 12px; color: var(--brand); margin-bottom: 8px; display: block; }
+.chat-panel__settings-save{ margin-top: 4px; }
 .chat-panel .chat-messages{ flex: 1; min-height: 120px; overflow-y: auto; }
 .chat-panel .chat-input-wrap{ flex-shrink: 0; border-radius: 0 0 var(--radius) var(--radius); }
 

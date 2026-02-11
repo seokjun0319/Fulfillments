@@ -1,5 +1,34 @@
 const NOTICES_KEY = "fulfillment-notices";
 const CONTACTS_KEY = "fulfillment-contacts";
+const GEMINI_API_KEY_KEY = "fulfillment-gemini-api-key";
+const GEMINI_MODEL = "gemini-1.5-flash";
+const GEMINI_MAX_HISTORY = 20;
+
+function buildPageContextForChat() {
+  var parts = [];
+  var notices = getNotices();
+  if (notices.length) {
+    parts.push("## 공지사항\n" + notices.slice(0, 15).map(function (n) {
+      return "- [" + (n.createdAt || "") + "] " + (n.category || "") + " | " + (n.title || "") + (n.status ? " (" + n.status + ")" : "") + "\n  " + (n.body || "").replace(/\n/g, " ");
+    }).join("\n"));
+  }
+  var contacts = getContacts();
+  if (contacts.length) {
+    parts.push("## 업무 연락망\n" + contacts.map(function (c) {
+      return "- " + (c.category || "") + " | " + (c.company || "") + " | " + (c.name || "") + " | " + (c.phone || "") + (c.email ? " | " + c.email : "") + (c.note ? " | " + c.note : "");
+    }).join("\n"));
+  }
+  var glossary = getGlossary();
+  if (glossary.length) {
+    parts.push("## 물류 용어집\n" + glossary.map(function (g) {
+      return "- " + (g.termKo || "") + " (" + (g.termEn || "") + "): " + (g.description || "");
+    }).join("\n"));
+  }
+  parts.push("## 물류/배송센터\n" + CENTERS_LOCATIONS.map(function (c) {
+    return "- " + (c.name || "") + " (" + (c.type || "") + "): " + (c.address || "");
+  }).join("\n"));
+  return parts.join("\n\n");
+}
 
 const DEFAULT_CONTACTS = [
   { id: "1", category: "도급사", company: "KPO", name: "이창용 소장", phone: "010-2223-9495", email: "", note: "김포 도급 관리자" },
@@ -915,9 +944,21 @@ function initChatBotFab() {
   var fab = document.getElementById("chatBotFab");
   var panel = document.getElementById("chatPanel");
   var closeBtn = document.getElementById("chatPanelClose");
+  var settingsBtn = document.getElementById("chatPanelSettings");
+  var settingsArea = document.getElementById("chatPanelSettingsArea");
+  var keyInput = document.getElementById("chatGeminiKey");
+  var keySaveBtn = document.getElementById("chatGeminiKeySave");
   var input = document.getElementById("chatInput");
   var sendBtn = document.getElementById("chatSend");
   var messagesEl = document.getElementById("chatMessages");
+
+  function getGeminiKey() {
+    try { return localStorage.getItem(GEMINI_API_KEY_KEY) || ""; } catch (_) { return ""; }
+  }
+  function setGeminiKey(val) {
+    try { localStorage.setItem(GEMINI_API_KEY_KEY, val || ""); } catch (_) {}
+  }
+
   function openPanel() {
     if (panel) {
       panel.classList.add("chat-panel--open");
@@ -929,25 +970,95 @@ function initChatBotFab() {
     if (panel) {
       panel.classList.remove("chat-panel--open");
       panel.setAttribute("aria-hidden", "true");
+      if (settingsArea) settingsArea.classList.remove("is-open");
     }
   }
-  function appendMsg(isUser, text) {
-    if (!messagesEl) return;
+  function appendMsg(isUser, text, isPlaceholder) {
+    if (!messagesEl) return null;
     var div = document.createElement("div");
-    div.className = "chat-msg " + (isUser ? "chat-msg--user" : "chat-msg--bot");
+    div.className = "chat-msg " + (isUser ? "chat-msg--user" : "chat-msg--bot") + (isPlaceholder ? " chat-msg--loading" : "");
     div.innerHTML = "<span class=\"chat-msg__label\">" + (isUser ? "You" : "Bot") + "</span><p class=\"chat-msg__text\">" + escapeHtml(text) + "</p>";
     messagesEl.appendChild(div);
     messagesEl.scrollTop = messagesEl.scrollHeight;
+    return div;
   }
+  function setMsgText(div, text) {
+    if (!div) return;
+    var p = div.querySelector(".chat-msg__text");
+    if (p) p.textContent = text;
+    if (div.classList) div.classList.remove("chat-msg--loading");
+  }
+
+  var chatHistory = [];
+
   function send() {
     var text = (input && input.value || "").trim();
     if (!text) return;
+    var apiKey = getGeminiKey().trim();
+    if (!apiKey) {
+      appendMsg(true, text);
+      if (input) input.value = "";
+      appendMsg(false, "API 키를 설정해 주세요. 상단 ⚙ 버튼에서 Google AI Studio 무료 키를 입력할 수 있습니다. 발급: aistudio.google.com/app/apikey");
+      if (settingsArea) settingsArea.classList.add("is-open");
+      return;
+    }
     appendMsg(true, text);
     if (input) input.value = "";
-    appendMsg(false, "연동 준비 중입니다. 추후 AI 답변이 제공될 예정입니다.");
+    var loadingEl = appendMsg(false, "답변 생성 중…", true);
+    sendBtn.disabled = true;
+
+    var contents = chatHistory.slice(-GEMINI_MAX_HISTORY).map(function (m) {
+      return { role: m.role, parts: [{ text: m.text }] };
+    });
+    contents.push({ role: "user", parts: [{ text: text }] });
+
+    var pageContext = buildPageContextForChat();
+    var systemText = "You are a helpful assistant for the Fulfillment business team (풀필먼트사업부 AI Workspace). Answer concisely in Korean when the user writes in Korean.\n\nWhen answering, use ONLY the following information from this workspace. If the answer is not in the data below, say you don't have that information in the workspace and suggest checking the relevant tab (공지사항, 업무 연락망, 물류 용어집, 센터 소개). Do not make up contact names, phone numbers, or notice content.\n\n--- Workspace data ---\n" + pageContext;
+    var url = "https://generativelanguage.googleapis.com/v1beta/models/" + GEMINI_MODEL + ":generateContent?key=" + encodeURIComponent(apiKey);
+    var body = {
+      contents: contents,
+      systemInstruction: { parts: [{ text: systemText }] },
+      generationConfig: { temperature: 0.7, maxOutputTokens: 1024 }
+    };
+    fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+      .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+      .then(function (result) {
+        if (result.ok && result.data.candidates && result.data.candidates[0]) {
+          var reply = (result.data.candidates[0].content && result.data.candidates[0].content.parts && result.data.candidates[0].content.parts[0])
+            ? result.data.candidates[0].content.parts[0].text || ""
+            : "";
+          chatHistory.push({ role: "user", text: text });
+          chatHistory.push({ role: "model", text: reply });
+          setMsgText(loadingEl, reply || "(응답 없음)");
+        } else {
+          var errMsg = (result.data.error && result.data.error.message) ? result.data.error.message : "응답을 가져오지 못했습니다.";
+          if (result.data.error && result.data.error.code === 403) errMsg = "API 키가 유효하지 않거나 권한이 없습니다. 키를 확인해 주세요.";
+          setMsgText(loadingEl, "오류: " + errMsg);
+        }
+      })
+      .catch(function (err) {
+        setMsgText(loadingEl, "오류: " + (err.message || "네트워크 오류"));
+      })
+      .then(function () { sendBtn.disabled = false; });
   }
+
   if (fab) fab.addEventListener("click", openPanel);
   if (closeBtn) closeBtn.addEventListener("click", closePanel);
+  if (settingsBtn && settingsArea) {
+    settingsBtn.addEventListener("click", function () {
+      settingsArea.classList.toggle("is-open");
+      if (keyInput && settingsArea.classList.contains("is-open")) {
+        keyInput.value = getGeminiKey();
+        keyInput.focus();
+      }
+    });
+  }
+  if (keySaveBtn && keyInput) {
+    keySaveBtn.addEventListener("click", function () {
+      setGeminiKey(keyInput.value.trim());
+      if (settingsArea) settingsArea.classList.remove("is-open");
+    });
+  }
   if (sendBtn) sendBtn.addEventListener("click", send);
   if (input) input.addEventListener("keydown", function (e) { if (e.key === "Enter") send(); });
 
