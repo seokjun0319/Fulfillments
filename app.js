@@ -4,6 +4,12 @@ const GEMINI_API_KEY_KEY = "fulfillment-gemini-api-key";
 var DEFAULT_GEMINI_API_KEY = "AIzaSyCpuyCrEUvOlkYWiL7pJ0VD10Q7E4s6ooo";
 const GEMINI_MODEL = "gemini-2.5-flash";
 const GEMINI_MAX_HISTORY = 20;
+var NEWS_API_KEY = "";
+var WEATHER_SERVICE_KEY = "";
+var AI_STUDY_VIDEOS = [
+  { id: "dQw4w9WgXcQ", title: "예시 영상 1" },
+  { id: "jNQXAC9IVRw", title: "예시 영상 2" },
+];
 
 function buildPageContextForChat() {
   var parts = [];
@@ -720,6 +726,37 @@ function renderMinigameTab() {
   `;
 }
 
+function renderIntegratedTab() {
+  var videoListHtml = (AI_STUDY_VIDEOS || []).map(function (v) {
+    return '<div class="video-item"><iframe class="video-iframe" src="https://www.youtube.com/embed/' + (v.id || "") + '" title="' + escapeHtml(v.title || "") + '" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe><p class="video-title">' + escapeHtml(v.title || "") + '</p></div>';
+  }).join("");
+  return `
+    <div class="integrated-grid">
+      <div class="card card--wide">
+        <div id="logistics-news" class="news-section">
+          <h3 class="card__title">물류 뉴스 클리핑</h3>
+          <p class="muted" style="margin-bottom:10px;">최신 물류/의약품 관련 뉴스를 불러옵니다.</p>
+          <div class="news-list"><span class="muted">로딩 중…</span></div>
+        </div>
+      </div>
+      <div class="card card--wide">
+        <div id="ai-study" class="study-section">
+          <h3 class="card__title">AI Study</h3>
+          <p class="muted" style="margin-bottom:10px;">학습용 영상 모음입니다.</p>
+          <div class="video-list">${videoListHtml}</div>
+        </div>
+      </div>
+      <div class="card">
+        <div id="weather-check" class="weather-section">
+          <h3 class="card__title">물류센터 점검포인트</h3>
+          <p class="muted" style="margin-bottom:10px;">기상 예보 기반 점검 안내입니다.</p>
+          <div class="weather-content"><span class="muted">로딩 중…</span></div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 const ROUTES = {
   notices: {
     title: "주요 공지사항",
@@ -779,6 +816,11 @@ const ROUTES = {
         </div>
       </div>
     `,
+  },
+  integrated: {
+    title: "통합",
+    desc: "물류 뉴스, AI 학습 콘텐츠, 날씨·물류센터 점검포인트를 한 페이지에서 확인합니다.",
+    render: renderIntegratedTab,
   },
   simulator: {
     title: "AI Simulator",
@@ -958,7 +1000,7 @@ function setActiveNav(routeKey) {
   });
 }
 
-var PAGE_HEADER_TITLES = { dashboard: "AI Dashboard", simulator: "AI Simulator", minigame: "미니게임" };
+var PAGE_HEADER_TITLES = { dashboard: "AI Dashboard", simulator: "AI Simulator", minigame: "미니게임", integrated: "통합" };
 function render() {
   const routeKey = getRouteFromHash();
   const route = ROUTES[routeKey];
@@ -972,6 +1014,7 @@ function render() {
   if (routeKey === "knowhow") wireKnowhow();
   if (routeKey === "centers") setTimeout(initCentersMap, 80);
   if (routeKey === "minigame") wireMinigame();
+  if (routeKey === "integrated") wireIntegrated();
 }
 
 function wireMinigame() {
@@ -1042,6 +1085,82 @@ function wireMinigame() {
         wheelSpinBtn.disabled = false;
       }, 4100);
     });
+  }
+}
+
+function wireIntegrated() {
+  var newsList = document.querySelector("#logistics-news .news-list");
+  var weatherContent = document.querySelector("#weather-check .weather-content");
+
+  if (newsList) {
+    if (typeof NEWS_API_KEY === "string" && NEWS_API_KEY.trim()) {
+      fetch("https://newsapi.org/v2/everything?q=물류+OR+의약품&language=ko&sortBy=publishedAt&pageSize=8&apiKey=" + encodeURIComponent(NEWS_API_KEY.trim()))
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          if (data.articles && data.articles.length) {
+            newsList.innerHTML = data.articles.map(function (article) {
+              return '<div class="news-item"><a href="' + (article.url || "#") + '" target="_blank" rel="noopener">' + escapeHtml(article.title || "") + '</a><p class="muted">' + escapeHtml(article.source && article.source.name || "") + " · " + (article.publishedAt ? new Date(article.publishedAt).toLocaleDateString("ko-KR") : "") + "</p></div>";
+            }).join("");
+          } else {
+            newsList.innerHTML = '<p class="muted">검색 결과가 없습니다.</p>';
+          }
+        })
+        .catch(function () {
+          newsList.innerHTML = '<p class="muted">뉴스를 불러오지 못했습니다. News API 키를 확인해 주세요.</p>';
+        });
+    } else {
+      newsList.innerHTML = '<p class="muted">News API 키를 설정하면 물류/의약품 뉴스를 불러옵니다. app.js에서 NEWS_API_KEY를 설정하세요.</p>';
+    }
+  }
+
+  if (weatherContent) {
+    if (typeof WEATHER_SERVICE_KEY === "string" && WEATHER_SERVICE_KEY.trim()) {
+      var today = new Date();
+      var baseDate = today.getFullYear() + String(today.getMonth() + 1).padStart(2, "0") + String(today.getDate()).padStart(2, "0");
+      var url = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst?serviceKey=" + encodeURIComponent(WEATHER_SERVICE_KEY.trim()) + "&numOfRows=20&pageNo=1&base_date=" + baseDate + "&base_time=0500&nx=60&ny=127&dataType=JSON";
+      fetch(url)
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          var items = data.response && data.response.body && data.response.body.items && data.response.body.items.item;
+          if (items && Array.isArray(items)) {
+            var pop = items.find(function (i) { return i.category === "POP"; });
+            var rainPercent = pop ? parseInt(pop.fcstValue, 10) : 0;
+            if (rainPercent >= 60) {
+              weatherContent.innerHTML = '<p class="weather-alert">⚠️ 물류센터 점검 필요: 오늘 비올 확률 ' + rainPercent + "%</p>";
+            } else {
+              weatherContent.innerHTML = '<p class="weather-ok">오늘은 물류센터 점검 위험 낮음 (강수확률 ' + (rainPercent || "-") + "%)</p>";
+            }
+          } else {
+            weatherContent.innerHTML = '<p class="muted">예보 데이터를 파싱하지 못했습니다.</p>';
+          }
+        })
+        .catch(function () {
+          weatherContent.innerHTML = '<p class="muted">기상청 API 연동 실패. serviceKey와 base_date/base_time을 확인해 주세요.</p>';
+        });
+    } else {
+      weatherContent.innerHTML = '<p class="muted">기상청 API 서비스 키를 설정하면 강수확률 기반 점검 안내를 표시합니다. app.js에서 WEATHER_SERVICE_KEY를 설정하세요.</p>';
+    }
+  }
+}
+
+function initFloatingUtils() {
+  var scrollBtn = document.getElementById("scrollTopBtn");
+  var themeBtn = document.getElementById("toggleThemeBtn");
+  if (scrollBtn) {
+    scrollBtn.addEventListener("click", function () {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  }
+  if (themeBtn) {
+    themeBtn.addEventListener("click", function () {
+      document.body.classList.toggle("dark-mode");
+      try {
+        localStorage.setItem("fulfillment-theme", document.body.classList.contains("dark-mode") ? "dark" : "light");
+      } catch (_) {}
+    });
+    try {
+      if (localStorage.getItem("fulfillment-theme") === "dark") document.body.classList.add("dark-mode");
+    } catch (_) {}
   }
 }
 
@@ -1194,6 +1313,7 @@ function wireDummySearch() {
 window.addEventListener("hashchange", render);
 window.addEventListener("DOMContentLoaded", () => {
   wireDummySearch();
+  initFloatingUtils();
   initChatBotFab();
   render();
 });
