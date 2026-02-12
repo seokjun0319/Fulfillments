@@ -4,7 +4,8 @@ const GEMINI_API_KEY_KEY = "fulfillment-gemini-api-key";
 var DEFAULT_GEMINI_API_KEY = "AIzaSyCpuyCrEUvOlkYWiL7pJ0VD10Q7E4s6ooo";
 const GEMINI_MODEL = "gemini-2.5-flash";
 const GEMINI_MAX_HISTORY = 20;
-var NEWS_API_KEY = "";
+/** NewsAPI (https://newsapi.org/) 키 - 물류 뉴스 클리핑용 */
+var NEWS_API_KEY = "2e3ddaf1596a46daafb313d9db8399e2";
 var WEATHER_SERVICE_KEY = "";
 var AI_STUDY_VIDEOS = [
   { id: "dQw4w9WgXcQ", title: "AI 예시 영상 1" },
@@ -760,7 +761,7 @@ function renderNewsAndWeatherBlocks() {
         <div id="logistics-news" class="news-section">
           <h3 class="card__title">물류 뉴스 클리핑</h3>
           <p class="muted" style="margin-bottom:10px;">최신 물류/의약품 관련 뉴스를 불러옵니다.</p>
-          <div class="news-list"><span class="muted">로딩 중…</span></div>
+          <div class="news-list">뉴스를 불러오는 중...</div>
         </div>
       </div>
       <div class="card">
@@ -1135,30 +1136,54 @@ function wireMinigame() {
   }
 }
 
-function wireIntegrated() {
+/**
+ * 물류 뉴스 클리핑: NewsAPI 호출 후 #logistics-news .news-list를 채웁니다.
+ * - news-list가 없으면 동작하지 않음
+ * - 제목(기사URL 링크) + 출처 · YYYY.MM.DD 형식으로 렌더링
+ * - API 오류(status="error") 또는 네트워크 오류 시 news-list에 안내 문구 표시
+ * - CORS 오류 시: 브라우저에서 직접 호출이 막히므로, 백엔드/프록시로 API 호출 후 결과만 프론트에 전달하도록 구현해야 합니다.
+ */
+function fetchLogisticsNews() {
   var newsList = document.querySelector("#logistics-news .news-list");
+  if (!newsList) return;
+  var apiKey = typeof NEWS_API_KEY === "string" ? NEWS_API_KEY.trim() : "";
+  if (!apiKey) {
+    newsList.innerHTML = '<p class="muted">app.js에서 NEWS_API_KEY를 설정한 뒤 새로고침하세요. (NewsAPI: newsapi.org)</p>';
+    return;
+  }
+  var url = "https://newsapi.org/v2/everything?q=물류+OR+의약품&language=ko&sortBy=publishedAt&pageSize=10&apiKey=" + encodeURIComponent(apiKey);
+  fetch(url)
+    .then(function (res) { return res.json(); })
+    .then(function (data) {
+      if (data.status === "error") {
+        newsList.innerHTML = '<p class="muted">오류: ' + escapeHtml(data.message || "API 오류") + "</p>";
+        return;
+      }
+      if (data.articles && data.articles.length) {
+        newsList.innerHTML = data.articles.map(function (article) {
+          var title = escapeHtml(article.title || "(제목 없음)");
+          var link = article.url ? article.url : "#";
+          var source = escapeHtml(article.source && article.source.name ? article.source.name : "");
+          var dateStr = "";
+          if (article.publishedAt) {
+            var d = new Date(article.publishedAt);
+            dateStr = d.getFullYear() + "." + String(d.getMonth() + 1).padStart(2, "0") + "." + String(d.getDate()).padStart(2, "0");
+          }
+          return '<div class="news-item"><a href="' + link + '" target="_blank" rel="noopener">' + title + '</a><p class="muted">' + source + (dateStr ? " · " + dateStr : "") + "</p></div>";
+        }).join("");
+      } else {
+        newsList.innerHTML = '<p class="muted">검색 결과가 없습니다.</p>';
+      }
+    })
+    .catch(function (err) {
+      newsList.innerHTML = '<p class="muted">뉴스를 불러오지 못했습니다. CORS 오류 시 백엔드/프록시를 통해 API를 호출한 뒤 결과만 전달하세요.</p>';
+    });
+}
+
+function wireIntegrated() {
   var weatherContent = document.querySelector("#weather-check .weather-content");
 
-  if (newsList) {
-    if (typeof NEWS_API_KEY === "string" && NEWS_API_KEY.trim()) {
-      fetch("https://newsapi.org/v2/everything?q=물류+OR+의약품&language=ko&sortBy=publishedAt&pageSize=8&apiKey=" + encodeURIComponent(NEWS_API_KEY.trim()))
-        .then(function (res) { return res.json(); })
-        .then(function (data) {
-          if (data.articles && data.articles.length) {
-            newsList.innerHTML = data.articles.map(function (article) {
-              return '<div class="news-item"><a href="' + (article.url || "#") + '" target="_blank" rel="noopener">' + escapeHtml(article.title || "") + '</a><p class="muted">' + escapeHtml(article.source && article.source.name || "") + " · " + (article.publishedAt ? new Date(article.publishedAt).toLocaleDateString("ko-KR") : "") + "</p></div>";
-            }).join("");
-          } else {
-            newsList.innerHTML = '<p class="muted">검색 결과가 없습니다.</p>';
-          }
-        })
-        .catch(function () {
-          newsList.innerHTML = '<p class="muted">뉴스를 불러오지 못했습니다. News API 키를 확인해 주세요.</p>';
-        });
-    } else {
-      newsList.innerHTML = '<p class="muted">News API 키를 설정하면 물류/의약품 뉴스를 불러옵니다. app.js에서 NEWS_API_KEY를 설정하세요.</p>';
-    }
-  }
+  fetchLogisticsNews();
 
   if (weatherContent) {
     if (typeof WEATHER_SERVICE_KEY === "string" && WEATHER_SERVICE_KEY.trim()) {
