@@ -380,6 +380,14 @@ body{
 .news-item a{ font-weight: 600; color: var(--brand); text-decoration: none; }
 .news-item a:hover{ text-decoration: underline; }
 .news-item p{ margin: 4px 0 0; font-size: 13px; }
+.ai-knowhow-list{ display: flex; flex-direction: column; gap: 12px; }
+.ai-knowhow-item{ padding: 12px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface-2); }
+.ai-knowhow-item__head{ display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.ai-knowhow-item__head strong{ flex: 1; min-width: 0; }
+.ai-knowhow-item__del{ width: 28px; height: 28px; border: none; background: transparent; color: var(--muted); font-size: 18px; cursor: pointer; border-radius: 6px; padding: 0; line-height: 1; }
+.ai-knowhow-item__del:hover{ color: var(--bad); background: rgba(225, 29, 72, 0.08); }
+.ai-knowhow-item__body{ font-size: 14px; line-height: 1.5; color: var(--text); }
+.video-list{ display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
 .study-section .video-list{ display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
 .video-item{ border-radius: var(--radius-sm); overflow: hidden; background: var(--surface-2); }
 .video-iframe{ width: 100%; aspect-ratio: 16/9; display: block; }
@@ -679,4 +687,5 @@ body.dark-mode .topbar{ background: var(--surface); }
 body.dark-mode .chat-panel{ background: var(--surface); }
 body.dark-mode .floating-utils__btn{ background: var(--surface); color: var(--text); border-color: var(--border); }
 body.dark-mode .brand__title{ color: #fff; }
+body.dark-mode .brand__logo{ mix-blend-mode: screen; }
 body.dark-mode .chat-fab{ background: rgba(30, 30, 30, 0.95); color: #eee; border-color: var(--border); }

@@ -7,9 +7,36 @@ const GEMINI_MAX_HISTORY = 20;
 var NEWS_API_KEY = "";
 var WEATHER_SERVICE_KEY = "";
 var AI_STUDY_VIDEOS = [
-  { id: "dQw4w9WgXcQ", title: "예시 영상 1" },
-  { id: "jNQXAC9IVRw", title: "예시 영상 2" },
+  { id: "dQw4w9WgXcQ", title: "AI 예시 영상 1" },
+  { id: "jNQXAC9IVRw", title: "AI 예시 영상 2" },
 ];
+const AI_KNOWHOW_KEY = "fulfillment-ai-knowhow";
+
+function getAiKnowhow() {
+  try {
+    var raw = localStorage.getItem(AI_KNOWHOW_KEY);
+    if (raw) {
+      var list = JSON.parse(raw);
+      if (Array.isArray(list)) return list;
+    }
+  } catch (_) {}
+  return [];
+}
+function saveAiKnowhow(list) {
+  try { localStorage.setItem(AI_KNOWHOW_KEY, JSON.stringify(list)); } catch (_) {}
+}
+function addAiKnowhowItem(item) {
+  var list = getAiKnowhow();
+  var id = String(Date.now());
+  list.unshift({ id: id, title: item.title || "", body: item.body || "", createdAt: new Date().toISOString().slice(0, 10) });
+  saveAiKnowhow(list);
+  return list;
+}
+function deleteAiKnowhowItem(id) {
+  var list = getAiKnowhow().filter(function (x) { return x.id !== id; });
+  saveAiKnowhow(list);
+  return list;
+}
 
 function buildPageContextForChat() {
   var parts = [];
@@ -751,6 +778,53 @@ function renderNoticesPage() {
   return renderNoticesTab() + renderNewsAndWeatherBlocks();
 }
 
+function renderAiStudyTab() {
+  var list = getAiKnowhow();
+  var knowhowHtml = list.length
+    ? list.map(function (item) {
+        return '<div class="ai-knowhow-item" data-id="' + escapeHtml(item.id) + '"><div class="ai-knowhow-item__head"><strong>' + escapeHtml(item.title || "") + '</strong><span class="muted">' + (item.createdAt || "") + '</span><button type="button" class="ai-knowhow-item__del" aria-label="삭제">×</button></div><div class="ai-knowhow-item__body">' + escapeHtml((item.body || "").replace(/\n/g, "<br/>")) + '</div></div>';
+      }).join("")
+    : '<p class="muted">등록된 노하우가 없습니다. 아래 버튼으로 추가해 보세요.</p>';
+  var videoHtml = (AI_STUDY_VIDEOS || []).map(function (v) {
+    return '<div class="video-item"><iframe class="video-iframe" src="https://www.youtube.com/embed/' + (v.id || "") + '" title="' + escapeHtml(v.title || "") + '" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe><p class="video-title">' + escapeHtml(v.title || "") + '</p></div>';
+  }).join("");
+  return `
+    <div class="grid">
+      <div class="card card--wide">
+        <h3 class="card__title">AI 업무 노하우</h3>
+        <p class="muted" style="margin-bottom:12px;">AI 활용 업무 노하우를 하나씩 쌓아가세요.</p>
+        <div class="ai-knowhow-list">${knowhowHtml}</div>
+        <button type="button" class="btn btn--primary" id="aiKnowhowAdd" style="margin-top:12px;">노하우 추가</button>
+      </div>
+      <div class="card card--wide">
+        <h3 class="card__title">AI 학습 컨텐츠</h3>
+        <p class="muted" style="margin-bottom:12px;">AI 관련 유튜브 영상입니다. app.js의 AI_STUDY_VIDEOS에서 영상 ID를 수정·추가할 수 있습니다.</p>
+        <div class="video-list">${videoHtml}</div>
+      </div>
+    </div>
+    <div class="modal" id="aiKnowhowModal" aria-hidden="true">
+      <div class="modal__backdrop" id="aiKnowhowModalBackdrop"></div>
+      <div class="modal__box" role="dialog" aria-labelledby="aiKnowhowModalTitle">
+        <h3 class="modal__title" id="aiKnowhowModalTitle">AI 업무 노하우 추가</h3>
+        <form id="aiKnowhowForm" class="form">
+          <div class="form__row">
+            <label class="form__label" for="aiKnowhowTitle">제목</label>
+            <input type="text" id="aiKnowhowTitle" class="form__input" placeholder="제목" required />
+          </div>
+          <div class="form__row">
+            <label class="form__label" for="aiKnowhowBody">내용</label>
+            <textarea id="aiKnowhowBody" class="form__input form__textarea" rows="5" placeholder="노하우 내용"></textarea>
+          </div>
+          <div class="form__actions">
+            <button type="button" class="btn btn--secondary" id="aiKnowhowModalClose">취소</button>
+            <button type="submit" class="btn btn--primary">저장</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+}
+
 const ROUTES = {
   notices: {
     title: "주요 공지사항",
@@ -810,6 +884,11 @@ const ROUTES = {
         </div>
       </div>
     `,
+  },
+  "ai-study": {
+    title: "AI Study",
+    desc: "AI 업무 노하우와 AI 학습 콘텐츠(유튜브)를 확인합니다.",
+    render: renderAiStudyTab,
   },
   simulator: {
     title: "AI Simulator",
@@ -922,7 +1001,7 @@ function setActiveNav(routeKey) {
   });
 }
 
-var PAGE_HEADER_TITLES = { dashboard: "AI Dashboard", simulator: "AI Simulator", "biz-status": "사업부 현황", "works-archive": "Works archive", etc: "기타" };
+var PAGE_HEADER_TITLES = { dashboard: "AI Dashboard", simulator: "AI Simulator", "ai-study": "AI Study", "biz-status": "사업부 현황", "works-archive": "Works archive", etc: "기타" };
 function render() {
   const routeKey = getRouteFromHash();
   const route = ROUTES[routeKey];
@@ -932,9 +1011,57 @@ function render() {
   document.getElementById("content").innerHTML = route.render();
   setActiveNav(routeKey);
   if (routeKey === "notices") { wireNotices(); wireIntegrated(); }
+  if (routeKey === "ai-study") wireAiStudy();
   if (routeKey === "biz-status") setTimeout(initCentersMap, 80);
   if (routeKey === "works-archive") { wireContacts(); wireKnowhow(); }
   if (routeKey === "etc") wireMinigame();
+}
+
+function wireAiStudy() {
+  var modal = document.getElementById("aiKnowhowModal");
+  var addBtn = document.getElementById("aiKnowhowAdd");
+  var closeBtn = document.getElementById("aiKnowhowModalClose");
+  var backdrop = document.getElementById("aiKnowhowModalBackdrop");
+  var form = document.getElementById("aiKnowhowForm");
+  var listEl = document.querySelector(".ai-knowhow-list");
+
+  function openModal() {
+    if (modal) { modal.setAttribute("aria-hidden", "false"); modal.classList.add("modal--open"); }
+    var t = document.getElementById("aiKnowhowTitle");
+    var b = document.getElementById("aiKnowhowBody");
+    if (t) t.value = "";
+    if (b) b.value = "";
+    if (t) t.focus();
+  }
+  function closeModal() {
+    if (modal) { modal.setAttribute("aria-hidden", "true"); modal.classList.remove("modal--open"); }
+  }
+
+  if (addBtn) addBtn.addEventListener("click", openModal);
+  if (closeBtn) closeBtn.addEventListener("click", closeModal);
+  if (backdrop) backdrop.addEventListener("click", closeModal);
+  if (form) {
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var title = (document.getElementById("aiKnowhowTitle") && document.getElementById("aiKnowhowTitle").value || "").trim();
+      var body = (document.getElementById("aiKnowhowBody") && document.getElementById("aiKnowhowBody").value || "").trim();
+      if (!title) return;
+      addAiKnowhowItem({ title: title, body: body });
+      closeModal();
+      render();
+    });
+  }
+  if (listEl) {
+    listEl.addEventListener("click", function (e) {
+      var del = e.target.closest(".ai-knowhow-item__del");
+      if (!del) return;
+      var item = e.target.closest(".ai-knowhow-item");
+      if (item && item.dataset.id && confirm("이 노하우를 삭제할까요?")) {
+        deleteAiKnowhowItem(item.dataset.id);
+        render();
+      }
+    });
+  }
 }
 
 function wireMinigame() {
@@ -1068,6 +1195,8 @@ function initFloatingUtils() {
   var themeBtn = document.getElementById("toggleThemeBtn");
   if (scrollBtn) {
     scrollBtn.addEventListener("click", function () {
+      var content = document.getElementById("content");
+      if (content) content.scrollTo({ top: 0, behavior: "smooth" });
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
   }
