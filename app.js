@@ -726,24 +726,14 @@ function renderMinigameTab() {
   `;
 }
 
-function renderIntegratedTab() {
-  var videoListHtml = (AI_STUDY_VIDEOS || []).map(function (v) {
-    return '<div class="video-item"><iframe class="video-iframe" src="https://www.youtube.com/embed/' + (v.id || "") + '" title="' + escapeHtml(v.title || "") + '" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe><p class="video-title">' + escapeHtml(v.title || "") + '</p></div>';
-  }).join("");
+function renderNewsAndWeatherBlocks() {
   return `
-    <div class="integrated-grid">
+    <div class="grid" style="margin-top:24px;">
       <div class="card card--wide">
         <div id="logistics-news" class="news-section">
           <h3 class="card__title">물류 뉴스 클리핑</h3>
           <p class="muted" style="margin-bottom:10px;">최신 물류/의약품 관련 뉴스를 불러옵니다.</p>
           <div class="news-list"><span class="muted">로딩 중…</span></div>
-        </div>
-      </div>
-      <div class="card card--wide">
-        <div id="ai-study" class="study-section">
-          <h3 class="card__title">AI Study</h3>
-          <p class="muted" style="margin-bottom:10px;">학습용 영상 모음입니다.</p>
-          <div class="video-list">${videoListHtml}</div>
         </div>
       </div>
       <div class="card">
@@ -757,11 +747,15 @@ function renderIntegratedTab() {
   `;
 }
 
+function renderNoticesPage() {
+  return renderNoticesTab() + renderNewsAndWeatherBlocks();
+}
+
 const ROUTES = {
   notices: {
     title: "주요 공지사항",
-    desc: "최신 공지와 공지사항 목록을 빠르게 확인합니다.",
-    render: renderNoticesTab,
+    desc: "최신 공지, 공지 목록, 뉴스 클리핑, 날씨/점검포인트를 확인합니다.",
+    render: renderNoticesPage,
   },
   dashboard: {
     title: "AI Dashboard",
@@ -817,11 +811,6 @@ const ROUTES = {
       </div>
     `,
   },
-  integrated: {
-    title: "통합",
-    desc: "물류 뉴스, AI 학습 콘텐츠, 날씨·물류센터 점검포인트를 한 페이지에서 확인합니다.",
-    render: renderIntegratedTab,
-  },
   simulator: {
     title: "AI Simulator",
     desc: "물동량 포케스팅·스태핑(인력) 계획 등을 시뮬레이션합니다.",
@@ -862,9 +851,9 @@ const ROUTES = {
       </div>
     `,
   },
-  centers: {
-    title: "센터 및 조직소개",
-    desc: "물류센터 현황과 조직도를 공유합니다.",
+  "biz-status": {
+    title: "사업부 현황",
+    desc: "물류센터, 조직도, 물류사업 소개를 확인합니다.",
     render: () => `
       <div class="grid">
         <div class="card card--half">
@@ -885,107 +874,40 @@ const ROUTES = {
             <iframe title="조직도 스프레드시트" class="embed-iframe" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vTqEhx3bsog9At6U6Yowe0kXzEln7Pa5JdZti6JjZ1wOCySX2WqbxqnQ1l-fOsibLAesE4jEjDS6Qto/pubhtml"></iframe>
           </div>
         </div>
-      </div>
-    `,
-  },
-  biz: {
-    title: "물류사업 소개",
-    desc: "풀필먼트 서비스 범위, 고객/채널, 운영 원칙 등을 소개합니다.",
-    render: () => `
-      <div class="grid">
         <div class="card card--full">
-          <h3 class="card__title">한 줄 소개</h3>
+          <h3 class="card__title">물류사업 소개</h3>
           <div class="card__body">
-            의료/헬스케어 특성에 맞춘 안정적인 풀필먼트 운영과 데이터 기반 개선을 제공합니다.
-          </div>
-        </div>
-        <div class="card">
-          <h3 class="card__title">서비스 범위</h3>
-          <div class="card__body">입고 · 보관 · 피킹/포장 · 출고 · 반품 · 재고관리</div>
-        </div>
-        <div class="card">
-          <h3 class="card__title">운영 원칙</h3>
-          <div class="card__body">정확도 우선 · SLA 준수 · 표준화 · 안전</div>
-        </div>
-        <div class="card">
-          <h3 class="card__title">주요 시스템</h3>
-          <div class="card__body">WMS · OMS · 리포팅(추후 연동)</div>
-        </div>
-      </div>
-    `,
-  },
-  progress: {
-    title: "주요 업무 진행사항",
-    desc: "프로젝트/이슈/개선 과제의 진행 상황을 공유합니다.",
-    render: () => `
-      <div class="grid">
-        <div class="card card--full">
-          <h3 class="card__title">진행 현황</h3>
-          <table class="table">
-            <thead>
-              <tr><th>과제</th><th>담당</th><th>기한</th><th>상태</th><th>메모</th></tr>
-            </thead>
-            <tbody>
-              <tr><td>피킹 동선 개선</td><td>운영팀</td><td>2026-02-20</td><td><span class="tag warn">진행중</span></td><td>구역 재배치 검토</td></tr>
-              <tr><td>대시보드 지표 정의</td><td>기획</td><td>2026-02-15</td><td><span class="tag warn">진행중</span></td><td>SLA/리드타임 정의 합의</td></tr>
-              <tr><td>반품 프로세스 표준화</td><td>운영팀</td><td>2026-03-05</td><td><span class="tag">대기</span></td><td>To-Be 문서 작성 예정</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    `,
-  },
-  contacts: {
-    title: "업무 연락망",
-    desc: "구분·업체·담당자 연락처를 관리합니다. 추가·수정·삭제가 가능합니다.",
-    render: renderContactsTab,
-  },
-  knowhow: {
-    title: "업무 노하우 공유",
-    desc: "물류 용어집과 업무 노하우를 문서화해 공유합니다.",
-    render: renderKnowhowTab,
-  },
-  minigame: {
-    title: "미니게임",
-    desc: "돌림판으로 커피 내기 등을 재미있게 정해 보세요.",
-    render: renderMinigameTab,
-  },
-  feedback: {
-    title: "페이지 피드백",
-    desc: "요청사항/개선 의견을 수집합니다(설문/폼 연결 예정).",
-    render: () => `
-      <div class="grid">
-        <div class="card card--wide">
-          <h3 class="card__title">요청사항 설문</h3>
-          <div class="card__body">
-            <div style="margin-top:10px; display:grid; gap:10px;">
-              <div>
-                <div class="muted" style="margin-bottom:6px;">요청 제목</div>
-                <div style="padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.04);">예) 대시보드에 센터별 SLA 추가</div>
-              </div>
-              <div>
-                <div class="muted" style="margin-bottom:6px;">상세 내용</div>
-                <div style="height:120px; padding:10px 12px; border-radius:12px; border:1px solid var(--border); background: var(--surface-2);">어디에/왜/원하는 결과를 입력해 주세요.</div>
-              </div>
-              <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                <span class="tag">기능 개선</span>
-                <span class="tag">콘텐츠 추가</span>
-                <span class="tag">버그</span>
-              </div>
-              <div class="muted">실제 제출/저장은 추후 연동</div>
+            <p style="margin-bottom:12px;">의료/헬스케어 특성에 맞춘 안정적인 풀필먼트 운영과 데이터 기반 개선을 제공합니다.</p>
+            <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:12px;">
+              <div><strong>서비스 범위</strong><br/><span class="muted">입고 · 보관 · 피킹/포장 · 출고 · 반품 · 재고관리</span></div>
+              <div><strong>운영 원칙</strong><br/><span class="muted">정확도 우선 · SLA 준수 · 표준화 · 안전</span></div>
+              <div><strong>주요 시스템</strong><br/><span class="muted">WMS · OMS · 리포팅(추후 연동)</span></div>
             </div>
           </div>
         </div>
-        <div class="card">
-          <h3 class="card__title">우선순위</h3>
-          <div class="card__body">
-            <span class="tag good">높음</span>
-            <span class="tag warn">중간</span>
-            <span class="tag bad">낮음</span>
-          </div>
-        </div>
       </div>
     `,
+  },
+  "works-archive": {
+    title: "Works archive",
+    desc: "주요 업무 진행사항, 연락망, 노하우 공유를 확인합니다.",
+    render: function () {
+      return (
+        '<div class="grid"><div class="card card--full"><h3 class="card__title">주요 업무 진행사항</h3><div class="table-wrap"><table class="table"><thead><tr><th>과제</th><th>담당</th><th>기한</th><th>상태</th><th>메모</th></tr></thead><tbody><tr><td>피킹 동선 개선</td><td>운영팀</td><td>2026-02-20</td><td><span class="tag warn">진행중</span></td><td>구역 재배치 검토</td></tr><tr><td>대시보드 지표 정의</td><td>기획</td><td>2026-02-15</td><td><span class="tag warn">진행중</span></td><td>SLA/리드타임 정의 합의</td></tr><tr><td>반품 프로세스 표준화</td><td>운영팀</td><td>2026-03-05</td><td><span class="tag">대기</span></td><td>To-Be 문서 작성 예정</td></tr></tbody></table></div></div></div>' +
+        renderContactsTab() +
+        renderKnowhowTab()
+      );
+    },
+  },
+  etc: {
+    title: "기타",
+    desc: "페이지 피드백, 미니게임을 확인합니다.",
+    render: function () {
+      return (
+        '<div class="grid"><div class="card card--wide"><h3 class="card__title">페이지 피드백</h3><div class="card__body"><p class="muted">요청사항/개선 의견을 수집합니다(설문/폼 연결 예정).</p><div style="margin-top:10px;"><span class="tag">기능 개선</span> <span class="tag">콘텐츠 추가</span> <span class="tag">버그</span></div></div></div></div>' +
+        renderMinigameTab()
+      );
+    },
   },
 };
 
@@ -1000,7 +922,7 @@ function setActiveNav(routeKey) {
   });
 }
 
-var PAGE_HEADER_TITLES = { dashboard: "AI Dashboard", simulator: "AI Simulator", minigame: "미니게임", integrated: "통합" };
+var PAGE_HEADER_TITLES = { dashboard: "AI Dashboard", simulator: "AI Simulator", "biz-status": "사업부 현황", "works-archive": "Works archive", etc: "기타" };
 function render() {
   const routeKey = getRouteFromHash();
   const route = ROUTES[routeKey];
@@ -1009,12 +931,10 @@ function render() {
   document.getElementById("pageDesc").textContent = route.desc;
   document.getElementById("content").innerHTML = route.render();
   setActiveNav(routeKey);
-  if (routeKey === "notices") wireNotices();
-  if (routeKey === "contacts") wireContacts();
-  if (routeKey === "knowhow") wireKnowhow();
-  if (routeKey === "centers") setTimeout(initCentersMap, 80);
-  if (routeKey === "minigame") wireMinigame();
-  if (routeKey === "integrated") wireIntegrated();
+  if (routeKey === "notices") { wireNotices(); wireIntegrated(); }
+  if (routeKey === "biz-status") setTimeout(initCentersMap, 80);
+  if (routeKey === "works-archive") { wireContacts(); wireKnowhow(); }
+  if (routeKey === "etc") wireMinigame();
 }
 
 function wireMinigame() {
