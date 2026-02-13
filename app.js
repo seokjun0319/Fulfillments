@@ -761,7 +761,7 @@ function renderNewsAndWeatherBlocks() {
           <div class="weather-center-toggles">
             <button type="button" class="weather-toggle-btn is-active" data-center="osan" aria-pressed="true">오산</button>
             <button type="button" class="weather-toggle-btn" data-center="gimpo" aria-pressed="false">김포</button>
-            <button type="button" class="weather-toggle-btn" data-center="hwaseong" aria-pressed="false">화성</button>
+            <button type="button" class="weather-toggle-btn" data-center="hwaseong" aria-pressed="false">향남</button>
           </div>
           <div class="weather-content">
             <div class="weather-loading">날씨를 불러오는 중…</div>
@@ -1176,7 +1176,7 @@ function fetchLogisticsNews() {
 var WEATHER_CENTERS = {
   osan: { name: "오산", lat: 37.1499, lon: 127.0772 },
   gimpo: { name: "김포", lat: 37.6151, lon: 126.7156 },
-  hwaseong: { name: "화성", lat: 37.1995, lon: 126.8310 }
+  hwaseong: { name: "향남", lat: 37.1995, lon: 126.8310 }
 };
 
 function weatherCodeToEmoji(code) {
@@ -1200,8 +1200,8 @@ async function fetchWeatherDashboard(centerKey) {
   var lat = center.lat, lon = center.lon;
   weatherContent.innerHTML = "<div class=\"weather-loading\">날씨를 불러오는 중…</div>";
   var url = "https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon +
-    "&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code" +
-    "&hourly=precipitation_probability&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weather_code" +
+    "&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code,precipitation" +
+    "&hourly=precipitation_probability&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,weather_code" +
     "&timezone=Asia/Seoul";
   try {
     var res = await fetch(url);
@@ -1215,6 +1215,7 @@ async function fetchWeatherDashboard(centerKey) {
     var humidity = cur.relative_humidity_2m != null ? Math.round(cur.relative_humidity_2m) : null;
     var wind = cur.wind_speed_10m != null ? Math.round(cur.wind_speed_10m) : null;
     var code = cur.weather_code;
+    var precipMm = cur.precipitation != null ? cur.precipitation : null;
     var now = new Date();
     var hourIndex = now.getHours();
     var pop = (data.hourly && data.hourly.precipitation_probability && data.hourly.precipitation_probability[hourIndex] != null)
@@ -1237,33 +1238,40 @@ async function fetchWeatherDashboard(centerKey) {
     var minTemps = (daily.temperature_2m_min || []).slice(0, 7);
     var dailyCodes = (daily.weather_code || []).slice(0, 7);
     var dailyPop = (daily.precipitation_probability_max || []).slice(0, 7);
+    var dailyPrecipSum = (daily.precipitation_sum || []).slice(0, 7);
 
+    var weekdays = ["일", "월", "화", "수", "목", "금", "토"];
     var dayLabels = days.map(function (d) {
       var date = new Date(d);
-      return (date.getMonth() + 1) + "/" + date.getDate();
+      var m = date.getMonth() + 1, day = date.getDate(), wd = weekdays[date.getDay()];
+      return (m + "/" + day + " " + wd);
     });
 
+    var riskDetailHtml = riskCount > 0 ? "<div class=\"weather-risk-detail\">" + insights.map(function (t) { return escapeHtml(t); }).join(" · ") + "</div>" : "";
     var currentCardHtml =
       "<div class=\"weather-current-card\">" +
       "<div class=\"weather-current-icon\">" + weatherCodeToEmoji(code) + "</div>" +
       "<div class=\"weather-current-temp\">" + (temp != null ? temp + "℃" : "-") + "</div>" +
       "<div class=\"weather-current-details\">" +
       "<span>습도 " + (humidity != null ? humidity + "%" : "-") + "</span>" +
-      "<span>강수 " + (pop != null ? pop + "%" : "-") + "</span>" +
+      "<span>강수확률 " + (pop != null ? pop + "%" : "-") + "</span>" +
+      "<span>강수량 " + (precipMm != null ? precipMm + "mm" : "-") + "</span>" +
       "<span>풍속 " + (wind != null ? wind + " km/h" : "-") + "</span>" +
       "</div>" +
-      "<div class=\"weather-risk " + riskClass + "\">위험도: " + riskLabel + "</div>" +
+      "<div class=\"weather-risk " + riskClass + "\">위험도: " + riskLabel + "</div>" + riskDetailHtml +
       "</div>";
 
     var forecastHtml = "<div class=\"weather-forecast-scroll\"><div class=\"weather-forecast-inner\">" +
       days.map(function (_, i) {
-        return "<div class=\"weather-forecast-day\"><div class=\"weather-forecast-day-icon\">" + weatherCodeToEmoji(dailyCodes[i]) + "</div><div class=\"weather-forecast-day-date\">" + escapeHtml(dayLabels[i]) + "</div><div class=\"weather-forecast-day-max\">" + (maxTemps[i] != null ? Math.round(maxTemps[i]) + "℃" : "-") + "</div><div class=\"weather-forecast-day-min\">" + (minTemps[i] != null ? Math.round(minTemps[i]) + "℃" : "-") + "</div></div>";
+        var popVal = dailyPop[i] != null ? dailyPop[i] + "%" : "-";
+        var sumVal = dailyPrecipSum[i] != null ? dailyPrecipSum[i] + "mm" : "-";
+        return "<div class=\"weather-forecast-day\"><div class=\"weather-forecast-day-icon\">" + weatherCodeToEmoji(dailyCodes[i]) + "</div><div class=\"weather-forecast-day-date\">" + escapeHtml(dayLabels[i]) + "</div><div class=\"weather-forecast-day-max\">" + (maxTemps[i] != null ? Math.round(maxTemps[i]) + "℃" : "-") + "</div><div class=\"weather-forecast-day-min\">" + (minTemps[i] != null ? Math.round(minTemps[i]) + "℃" : "-") + "</div><div class=\"weather-forecast-day-pop\">강수 " + popVal + "</div><div class=\"weather-forecast-day-precip\">" + sumVal + "</div></div>";
       }).join("") +
       "</div></div>";
 
     var chartHtml = "<div class=\"weather-chart-wrap\"><canvas id=\"weatherChart\" height=\"120\"></canvas></div>";
 
-    var insightHtml = "<div class=\"weather-insight-box\"><h4 class=\"weather-insight-title\">물류센터 인사이트</h4>" +
+    var insightHtml = "<div class=\"weather-insight-box\"><h4 class=\"weather-insight-title\">물류센터 점검 AI 인사이트</h4>" +
       (insights.length ? "<ul class=\"weather-insight-list\">" + insights.map(function (t) { return "<li>" + escapeHtml(t) + "</li>"; }).join("") + "</ul>" : "<p class=\"muted\">현재 기준 추가 점검 인사이트 없음</p>") +
       "</div>";
 
