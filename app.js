@@ -763,11 +763,17 @@ function renderNewsAndWeatherBlocks() {
           <div class="news-list">뉴스를 불러오는 중...</div>
         </div>
       </div>
-      <div class="card">
-        <div id="weather-check" class="weather-section">
-          <h3 class="card__title">물류센터 점검포인트</h3>
-          <p class="muted" style="margin-bottom:10px;">기상 예보 기반 점검 안내입니다.</p>
-          <div class="weather-content"><span class="muted">로딩 중…</span></div>
+      <div class="card card--full">
+        <div id="weather-check" class="weather-dashboard">
+          <h3 class="card__title">물류센터 날씨 대시보드</h3>
+          <div class="weather-center-toggles">
+            <button type="button" class="weather-toggle-btn is-active" data-center="osan" aria-pressed="true">오산</button>
+            <button type="button" class="weather-toggle-btn" data-center="gimpo" aria-pressed="false">김포</button>
+            <button type="button" class="weather-toggle-btn" data-center="hwaseong" aria-pressed="false">화성</button>
+          </div>
+          <div class="weather-content">
+            <div class="weather-loading">날씨를 불러오는 중…</div>
+          </div>
         </div>
       </div>
     </div>
@@ -1175,63 +1181,138 @@ function fetchLogisticsNews() {
     });
 }
 
-/**
- * Open-Meteo(무료, API 키 불필요)로 서울 날씨 조회 후 물류센터 점검포인트 영역을 채웁니다.
- * 기온·습도·강수확률·풍속 표시 + 조건별 인사이트 문구 출력.
- */
-async function fetchWeatherInsight() {
+var WEATHER_CENTERS = {
+  osan: { name: "오산", lat: 37.1499, lon: 127.0772 },
+  gimpo: { name: "김포", lat: 37.6151, lon: 126.7156 },
+  hwaseong: { name: "화성", lat: 37.1995, lon: 126.8310 }
+};
+
+function weatherCodeToEmoji(code) {
+  if (code == null) return "🌡️";
+  var c = parseInt(code, 10);
+  if (c === 0) return "☀️";
+  if (c >= 1 && c <= 3) return "⛅";
+  if (c >= 45 && c <= 48) return "🌫️";
+  if (c >= 51 && c <= 67) return "🌧️";
+  if (c >= 71 && c <= 77) return "❄️";
+  if (c >= 80 && c <= 99) return "🌦️";
+  return "🌡️";
+}
+
+var weatherChartInstance = null;
+
+async function fetchWeatherDashboard(centerKey) {
   var weatherContent = document.querySelector("#weather-check .weather-content");
   if (!weatherContent) return;
-  var url = "https://api.open-meteo.com/v1/forecast?latitude=37.5665&longitude=126.9780&current=temperature_2m,relative_humidity_2m,wind_speed_10m&hourly=precipitation_probability&timezone=Asia/Seoul";
+  var center = WEATHER_CENTERS[centerKey] || WEATHER_CENTERS.osan;
+  var lat = center.lat, lon = center.lon;
+  weatherContent.innerHTML = "<div class=\"weather-loading\">날씨를 불러오는 중…</div>";
+  var url = "https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon +
+    "&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code" +
+    "&hourly=precipitation_probability&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weather_code" +
+    "&timezone=Asia/Seoul";
   try {
     var res = await fetch(url);
     var data = await res.json();
-    if (!data.current) {
-      weatherContent.innerHTML = "<p class=\"muted\">날씨 정보를 불러올 수 없습니다.</p>";
+    if (!data.current || !data.daily) {
+      weatherContent.innerHTML = "<div class=\"weather-error\"><p>날씨 정보를 불러올 수 없습니다.</p></div>";
       return;
     }
     var cur = data.current;
     var temp = cur.temperature_2m != null ? Math.round(cur.temperature_2m) : null;
     var humidity = cur.relative_humidity_2m != null ? Math.round(cur.relative_humidity_2m) : null;
     var wind = cur.wind_speed_10m != null ? Math.round(cur.wind_speed_10m) : null;
-    var pop = (data.hourly && data.hourly.precipitation_probability && data.hourly.precipitation_probability[0] != null)
-      ? data.hourly.precipitation_probability[0] : null;
-
-    var tempStr = temp != null ? temp + "℃" : "-";
-    var humidityStr = humidity != null ? humidity + "%" : "-";
-    var popStr = pop != null ? pop + "%" : "-";
-    var windStr = wind != null ? wind + " km/h" : "-";
+    var code = cur.weather_code;
+    var now = new Date();
+    var hourIndex = now.getHours();
+    var pop = (data.hourly && data.hourly.precipitation_probability && data.hourly.precipitation_probability[hourIndex] != null)
+      ? data.hourly.precipitation_probability[hourIndex] : (data.daily.precipitation_probability_max && data.daily.precipitation_probability_max[0] != null ? data.daily.precipitation_probability_max[0] : null);
 
     var insights = [];
     if (pop != null && pop >= 70) insights.push("센터 누수 및 출입구 방수 상태 점검하세요.");
-    if (humidity != null && humidity >= 75) insights.push("의약품 및 민감 화물 습도 관리 확인하세요.");
-    if (wind != null && wind >= 10) insights.push("야드 적재물 및 낙하물 위험 점검하세요.");
+    if (humidity != null && humidity >= 80) insights.push("의약품 및 민감 화물 습도 관리 확인하세요.");
+    if (wind != null && wind >= 12) insights.push("야드 적재물 및 낙하물 위험 점검하세요.");
     if (temp != null && temp >= 30) insights.push("냉장/냉동 구역 온도 점검하세요.");
     if (temp != null && temp <= 0) insights.push("결빙 및 도크 슬립 위험 점검하세요.");
 
-    var insightHtml = insights.length
-      ? "<ul class=\"weather-insight-list\">" + insights.map(function (t) { return "<li>" + escapeHtml(t) + "</li>"; }).join("") + "</ul>"
-      : "<p class=\"muted\">현재 기준 추가 점검 인사이트 없음</p>";
+    var riskCount = insights.length;
+    var riskClass = riskCount >= 2 ? "weather-risk--danger" : (riskCount === 1 ? "weather-risk--warn" : "weather-risk--ok");
+    var riskLabel = riskCount >= 2 ? "경고" : (riskCount === 1 ? "주의" : "정상");
 
-    weatherContent.innerHTML =
-      "<div class=\"weather-data\">" +
-      "<p><strong>현재 기온:</strong> " + escapeHtml(tempStr) + "</p>" +
-      "<p><strong>현재 습도:</strong> " + escapeHtml(humidityStr) + "</p>" +
-      "<p><strong>강수확률:</strong> " + escapeHtml(popStr) + "</p>" +
-      "<p><strong>풍속:</strong> " + escapeHtml(windStr) + "</p>" +
+    var daily = data.daily;
+    var days = (daily.time || []).slice(0, 7);
+    var maxTemps = (daily.temperature_2m_max || []).slice(0, 7);
+    var minTemps = (daily.temperature_2m_min || []).slice(0, 7);
+    var dailyCodes = (daily.weather_code || []).slice(0, 7);
+    var dailyPop = (daily.precipitation_probability_max || []).slice(0, 7);
+
+    var dayLabels = days.map(function (d) {
+      var date = new Date(d);
+      return (date.getMonth() + 1) + "/" + date.getDate();
+    });
+
+    var currentCardHtml =
+      "<div class=\"weather-current-card\">" +
+      "<div class=\"weather-current-icon\">" + weatherCodeToEmoji(code) + "</div>" +
+      "<div class=\"weather-current-temp\">" + (temp != null ? temp + "℃" : "-") + "</div>" +
+      "<div class=\"weather-current-details\">" +
+      "<span>습도 " + (humidity != null ? humidity + "%" : "-") + "</span>" +
+      "<span>강수 " + (pop != null ? pop + "%" : "-") + "</span>" +
+      "<span>풍속 " + (wind != null ? wind + " km/h" : "-") + "</span>" +
       "</div>" +
-      "<h4 class=\"weather-insight-title\">물류센터 인사이트</h4>" +
-      insightHtml;
+      "<div class=\"weather-risk " + riskClass + "\">위험도: " + riskLabel + "</div>" +
+      "</div>";
+
+    var forecastHtml = "<div class=\"weather-forecast-scroll\"><div class=\"weather-forecast-inner\">" +
+      days.map(function (_, i) {
+        return "<div class=\"weather-forecast-day\"><div class=\"weather-forecast-day-icon\">" + weatherCodeToEmoji(dailyCodes[i]) + "</div><div class=\"weather-forecast-day-date\">" + escapeHtml(dayLabels[i]) + "</div><div class=\"weather-forecast-day-max\">" + (maxTemps[i] != null ? Math.round(maxTemps[i]) + "℃" : "-") + "</div><div class=\"weather-forecast-day-min\">" + (minTemps[i] != null ? Math.round(minTemps[i]) + "℃" : "-") + "</div></div>";
+      }).join("") +
+      "</div></div>";
+
+    var chartHtml = "<div class=\"weather-chart-wrap\"><canvas id=\"weatherChart\" height=\"120\"></canvas></div>";
+
+    var insightHtml = "<div class=\"weather-insight-box\"><h4 class=\"weather-insight-title\">물류센터 인사이트</h4>" +
+      (insights.length ? "<ul class=\"weather-insight-list\">" + insights.map(function (t) { return "<li>" + escapeHtml(t) + "</li>"; }).join("") + "</ul>" : "<p class=\"muted\">현재 기준 추가 점검 인사이트 없음</p>") +
+      "</div>";
+
+    weatherContent.innerHTML = currentCardHtml + forecastHtml + chartHtml + insightHtml;
+
+    if (typeof Chart !== "undefined" && maxTemps.length) {
+      var ctx = document.getElementById("weatherChart");
+      if (ctx) {
+        if (weatherChartInstance) weatherChartInstance.destroy();
+        weatherChartInstance = new Chart(ctx.getContext("2d"), {
+          type: "line",
+          data: {
+            labels: dayLabels,
+            datasets: [{ label: "최고기온(℃)", data: maxTemps.map(function (v) { return v != null ? Math.round(v) : null; }), borderColor: "rgb(0, 122, 204)", backgroundColor: "rgba(0, 122, 204, 0.1)", fill: true, tension: 0.3 }]
+          },
+          options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: false } } }
+        });
+      }
+    }
   } catch (err) {
-    weatherContent.innerHTML = "<p class=\"muted\">날씨 정보를 불러올 수 없습니다.</p>";
+    weatherContent.innerHTML = "<div class=\"weather-error\"><p>날씨 정보를 불러올 수 없습니다.</p></div>";
   }
 }
 
 function wireIntegrated() {
-  var weatherContent = document.querySelector("#weather-check .weather-content");
-
   fetchLogisticsNews();
-  fetchWeatherInsight();
+
+  var toggles = document.querySelectorAll("#weather-check .weather-toggle-btn");
+  var currentCenter = "osan";
+  toggles.forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var centerKey = btn.getAttribute("data-center");
+      if (!centerKey) return;
+      currentCenter = centerKey;
+      toggles.forEach(function (b) { b.classList.remove("is-active"); b.setAttribute("aria-pressed", "false"); });
+      btn.classList.add("is-active");
+      btn.setAttribute("aria-pressed", "true");
+      fetchWeatherDashboard(centerKey);
+    });
+  });
+  fetchWeatherDashboard(currentCenter);
 }
 
 function initFloatingUtils() {
