@@ -219,9 +219,9 @@ function initCentersMap() {
 }
 
 const DEFAULT_NOTICES = [
-  { id: "1", category: "운영", title: "반품 입고 기준 변경", body: "센터별 반품 입고 기준이 변경되었습니다. 자세한 내용은 첨부를 확인해 주세요.", createdAt: "2026-02-08", status: "공지중" },
-  { id: "2", category: "시스템", title: "WMS 점검 안내", body: "WMS 정기 점검 일정 안내입니다.", createdAt: "2026-02-05", status: "종료" },
-  { id: "3", category: "안전", title: "센터 안전교육 안내", body: "전 센터 안전교육 일정을 공지합니다.", createdAt: "2026-02-01", status: "종료" },
+  { id: "1", category: "운영", title: "반품 입고 기준 변경", body: "센터별 반품 입고 기준이 변경되었습니다. 자세한 내용은 첨부를 확인해 주세요.", author: "관리자", createdAt: "2026-02-08T10:00:00.000Z", noticeStartDate: "2026-02-08", noticeEndDate: "2026-02-28", status: "공지중" },
+  { id: "2", category: "시스템", title: "WMS 점검 안내", body: "WMS 정기 점검 일정 안내입니다.", author: "시스템팀", createdAt: "2026-02-05T09:00:00.000Z", noticeStartDate: "", noticeEndDate: "", status: "종료" },
+  { id: "3", category: "안전", title: "센터 안전교육 안내", body: "전 센터 안전교육 일정을 공지합니다.", author: "안전담당", createdAt: "2026-02-01T14:00:00.000Z", noticeStartDate: "", noticeEndDate: "", status: "종료" },
 ];
 
 function getNotices() {
@@ -239,10 +239,19 @@ function saveNotices(list) {
   localStorage.setItem(NOTICES_KEY, JSON.stringify(list));
 }
 
+function formatNoticeDatetime(isoStr) {
+  if (!isoStr) return "";
+  var d = new Date(isoStr);
+  if (isNaN(d.getTime())) return isoStr;
+  var y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, "0"), day = String(d.getDate()).padStart(2, "0");
+  var h = String(d.getHours()).padStart(2, "0"), min = String(d.getMinutes()).padStart(2, "0");
+  return y + "-" + m + "-" + day + " " + h + ":" + min;
+}
+
 function addNotice(notice) {
   const list = getNotices();
   const id = String(Date.now());
-  const createdAt = new Date().toISOString().slice(0, 10);
+  const createdAt = new Date().toISOString();
   list.unshift({ id, ...notice, createdAt: notice.createdAt || createdAt });
   saveNotices(list);
   return list;
@@ -260,12 +269,13 @@ function renderNoticesTab() {
   const latestHtml = latest
     ? `
     <div class="notice-meta" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
-      <span class="tag">${latest.category}</span>
-      <span class="muted">${latest.createdAt}</span>
+      <span class="tag">${escapeHtml(latest.category)}</span>
+      <span class="muted">${escapeHtml(latest.author || "")}</span>
+      <span class="muted">작성일시 ${formatNoticeDatetime(latest.createdAt)}</span>
       ${latest.status ? statusTag(latest.status) : ""}
     </div>
     <b>${escapeHtml(latest.title)}</b>
-    <div class="muted" style="margin-top:8px; white-space:pre-wrap;">${escapeHtml(latest.body || "")}</div>
+    <div class="notice-body-html" style="margin-top:8px;">${sanitizeNoticeBody(latest.body || "")}</div>
   `
     : `<p class="muted">등록된 공지가 없습니다. 신규 공지를 작성해 주세요.</p>`;
 
@@ -275,7 +285,9 @@ function renderNoticesTab() {
         `<tr>
           <td>${escapeHtml(n.category)}</td>
           <td>${escapeHtml(n.title)}</td>
-          <td>${n.createdAt}</td>
+          <td>${escapeHtml(n.author || "-")}</td>
+          <td>${formatNoticeDatetime(n.createdAt)}</td>
+          <td>${escapeHtml(n.noticeStartDate || "-")} ~ ${escapeHtml(n.noticeEndDate || "-")}</td>
           <td>${statusTag(n.status)}</td>
         </tr>`
     )
@@ -299,9 +311,11 @@ function renderNoticesTab() {
           <table class="table">
             <thead>
               <tr>
-                <th style="width:100px;">구분</th>
+                <th style="width:90px;">구분</th>
                 <th>제목</th>
-                <th style="width:100px;">작성일</th>
+                <th style="width:90px;">작성자</th>
+                <th style="width:130px;">작성일시</th>
+                <th style="width:160px;">공지기간</th>
                 <th style="width:80px;">상태</th>
               </tr>
             </thead>
@@ -326,12 +340,30 @@ function renderNoticesTab() {
             </select>
           </div>
           <div class="form__row">
+            <label class="form__label" for="noticeAuthor">작성자 이름</label>
+            <input type="text" id="noticeAuthor" class="form__input" placeholder="작성자" />
+          </div>
+          <div class="form__row">
             <label class="form__label" for="noticeTitle">제목</label>
             <input type="text" id="noticeTitle" class="form__input" placeholder="공지 제목" required />
           </div>
           <div class="form__row">
-            <label class="form__label" for="noticeBody">본문</label>
-            <textarea id="noticeBody" class="form__input form__textarea" placeholder="공지 내용 (선택)"></textarea>
+            <label class="form__label">공지기간</label>
+            <div class="form__inline" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+              <input type="date" id="noticeStartDate" class="form__input" style="flex:1; min-width:140px;" />
+              <span class="muted">~</span>
+              <input type="date" id="noticeEndDate" class="form__input" style="flex:1; min-width:140px;" />
+            </div>
+          </div>
+          <div class="form__row">
+            <label class="form__label">본문</label>
+            <div class="notice-body-editor-wrap">
+              <div id="noticeBody" class="form__input form__textarea notice-body-editor" contenteditable="true" data-placeholder="공지 내용 (선택). 이미지 붙여넣기 또는 아래 버튼으로 추가 가능"></div>
+              <div style="margin-top:6px;">
+                <button type="button" class="btn btn--secondary btn--sm" id="noticeBodyInsertImage" title="이미지 추가">이미지 추가</button>
+                <input type="file" id="noticeBodyImageInput" accept="image/*" style="position:absolute; left:-9999px;" />
+              </div>
+            </div>
           </div>
           <div class="form__row">
             <label class="form__label" for="noticeStatus">상태</label>
@@ -356,6 +388,32 @@ function escapeHtml(s) {
   const div = document.createElement("div");
   div.textContent = s;
   return div.innerHTML;
+}
+
+function sanitizeNoticeBody(html) {
+  if (!html || typeof html !== "string") return "";
+  var div = document.createElement("div");
+  div.innerHTML = html;
+  var allowedTags = ["P", "BR", "DIV", "SPAN", "STRONG", "EM", "B", "I", "IMG", "UL", "OL", "LI"];
+  function sanitizeNode(node) {
+    if (node.nodeType === 3) return node.textContent;
+    if (node.nodeType !== 1) return "";
+    var tag = node.tagName.toUpperCase();
+    if (allowedTags.indexOf(tag) === -1) return escapeHtml(node.textContent);
+    if (tag === "IMG") {
+      var src = (node.getAttribute("src") || "").trim();
+      if (src.indexOf("data:") === 0 || src.indexOf("https:") === 0 || src.indexOf("http:") === 0) {
+        return "<img src=\"" + escapeHtml(src) + "\" alt=\"\" style=\"max-width:100%;height:auto;\" />";
+      }
+      return "";
+    }
+    var out = "<" + tag.toLowerCase() + ">";
+    for (var i = 0; i < node.childNodes.length; i++) out += sanitizeNode(node.childNodes[i]);
+    return out + "</" + tag.toLowerCase() + ">";
+  }
+  var out = "";
+  for (var j = 0; j < div.childNodes.length; j++) out += sanitizeNode(div.childNodes[j]);
+  return out || escapeHtml(html);
 }
 
 function openNoticeModal() {
@@ -387,14 +445,64 @@ function wireNotices() {
     form.addEventListener("submit", (e) => {
       e.preventDefault();
       const category = document.getElementById("noticeCategory").value.trim();
+      const author = document.getElementById("noticeAuthor").value.trim();
       const title = document.getElementById("noticeTitle").value.trim();
-      const body = document.getElementById("noticeBody").value.trim();
+      const bodyEl = document.getElementById("noticeBody");
+      const body = (bodyEl && bodyEl.innerHTML) ? bodyEl.innerHTML.trim() : "";
+      const noticeStartDate = document.getElementById("noticeStartDate").value.trim();
+      const noticeEndDate = document.getElementById("noticeEndDate").value.trim();
       const status = document.getElementById("noticeStatus").value;
       if (!title) return;
-      addNotice({ category, title, body, status });
+      addNotice({ category, author, title, body, noticeStartDate, noticeEndDate, status });
       form.reset();
+      if (bodyEl) bodyEl.innerHTML = "";
       closeNoticeModal();
       render();
+    });
+  }
+  var bodyEditor = document.getElementById("noticeBody");
+  var imgBtn = document.getElementById("noticeBodyInsertImage");
+  var imgInput = document.getElementById("noticeBodyImageInput");
+  if (bodyEditor) {
+    bodyEditor.addEventListener("paste", function (e) {
+      var items = e.clipboardData && e.clipboardData.items;
+      if (!items) return;
+      for (var i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf("image") !== -1) {
+          e.preventDefault();
+          var file = items[i].getAsFile();
+          if (!file) return;
+          var reader = new FileReader();
+          reader.onload = function (ev) {
+            var img = document.createElement("img");
+            img.src = ev.target.result;
+            img.style.maxWidth = "100%";
+            img.style.height = "auto";
+            bodyEditor.focus();
+            document.execCommand("insertHTML", false, img.outerHTML);
+          };
+          reader.readAsDataURL(file);
+          return;
+        }
+      }
+    });
+  }
+  if (imgBtn && imgInput && bodyEditor) {
+    imgBtn.addEventListener("click", function () { imgInput.click(); });
+    imgInput.addEventListener("change", function () {
+      var file = this.files && this.files[0];
+      if (!file || !file.type.match(/^image\//)) return;
+      var reader = new FileReader();
+      reader.onload = function (ev) {
+        var img = document.createElement("img");
+        img.src = ev.target.result;
+        img.style.maxWidth = "100%";
+        img.style.height = "auto";
+        bodyEditor.focus();
+        document.execCommand("insertHTML", false, img.outerHTML);
+      };
+      reader.readAsDataURL(file);
+      this.value = "";
     });
   }
 }
