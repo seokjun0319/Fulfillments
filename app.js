@@ -281,13 +281,16 @@ function renderNoticesTab() {
     )
     .join("");
 
-  return `
+  var latestSection = `
     <div class="grid">
-      <div class="card card--half">
+      <div class="card card--full">
         <h3 class="card__title">최신 공지</h3>
         <div class="card__body">${latestHtml}</div>
       </div>
-      <div class="card card--half">
+    </div>`;
+  var listSection = `
+    <div class="grid" style="margin-top:24px;">
+      <div class="card card--full">
         <div class="card__head" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
           <h3 class="card__title" style="margin:0;">공지사항 목록</h3>
           <button type="button" class="btn btn--primary" id="btnAddNotice">신규 공지 작성</button>
@@ -306,7 +309,8 @@ function renderNoticesTab() {
           </table>
         </div>
       </div>
-    </div>
+    </div>`;
+  var modalHtml = `
     <div class="modal" id="noticeModal" aria-hidden="true">
       <div class="modal__backdrop" id="noticeModalBackdrop"></div>
       <div class="modal__box" role="dialog" aria-labelledby="noticeModalTitle">
@@ -343,8 +347,8 @@ function renderNoticesTab() {
           </div>
         </form>
       </div>
-    </div>
-  `;
+    </div>`;
+  return { latestSection, listSection, modalHtml };
 }
 
 function escapeHtml(s) {
@@ -750,14 +754,14 @@ function renderNewsAndWeatherBlocks() {
     <div class="grid" style="margin-top:24px;">
       <div class="card card--half">
         <div id="logistics-news" class="news-section">
-          <h3 class="card__title">물류 뉴스 클리핑</h3>
+          <h3 class="card__title">물류 뉴스 AI 클리핑</h3>
           <p class="muted" style="margin-bottom:10px;">최신 물류/의약품 관련 뉴스를 불러옵니다.</p>
           <div class="news-list">뉴스를 불러오는 중...</div>
         </div>
       </div>
       <div class="card card--half">
         <div id="weather-check" class="weather-dashboard">
-          <h3 class="card__title">물류센터 날씨 대시보드</h3>
+          <h3 class="card__title">물류센터 AI 기상 Dashboard</h3>
           <div class="weather-center-toggles">
             <button type="button" class="weather-toggle-btn is-active" data-center="osan" aria-pressed="true">오산</button>
             <button type="button" class="weather-toggle-btn" data-center="gimpo" aria-pressed="false">김포</button>
@@ -773,7 +777,8 @@ function renderNewsAndWeatherBlocks() {
 }
 
 function renderNoticesPage() {
-  return renderNoticesTab() + renderNewsAndWeatherBlocks();
+  var tab = renderNoticesTab();
+  return tab.latestSection + renderNewsAndWeatherBlocks() + tab.listSection + tab.modalHtml;
 }
 
 function renderAiStudyTab() {
@@ -1201,7 +1206,7 @@ async function fetchWeatherDashboard(centerKey) {
   weatherContent.innerHTML = "<div class=\"weather-loading\">날씨를 불러오는 중…</div>";
   var url = "https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon +
     "&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code,precipitation" +
-    "&hourly=precipitation_probability&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,weather_code" +
+    "&hourly=temperature_2m,precipitation_probability&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,weather_code" +
     "&timezone=Asia/Seoul";
   try {
     var res = await fetch(url);
@@ -1247,7 +1252,9 @@ async function fetchWeatherDashboard(centerKey) {
       return (m + "/" + day + " " + wd);
     });
 
-    var riskDetailHtml = riskCount > 0 ? "<div class=\"weather-risk-detail\">" + insights.map(function (t) { return escapeHtml(t); }).join(" · ") + "</div>" : "";
+    var riskDetailHtml = riskCount > 0
+      ? "<div class=\"weather-risk-detail-wrap\"><span class=\"weather-risk-detail-label\">[AI Agent 위험관리 제안]</span> <span class=\"weather-risk-detail\">" + insights.map(function (t) { return escapeHtml(t); }).join(" · ") + "</span></div>"
+      : "";
     var currentCardHtml =
       "<div class=\"weather-current-card\">" +
       "<div class=\"weather-current-icon\">" + weatherCodeToEmoji(code) + "</div>" +
@@ -1271,23 +1278,36 @@ async function fetchWeatherDashboard(centerKey) {
 
     var chartHtml = "<div class=\"weather-chart-wrap\"><canvas id=\"weatherChart\" height=\"120\"></canvas></div>";
 
-    var insightHtml = "<div class=\"weather-insight-box\"><h4 class=\"weather-insight-title\">물류센터 점검 AI 인사이트</h4>" +
-      (insights.length ? "<ul class=\"weather-insight-list\">" + insights.map(function (t) { return "<li>" + escapeHtml(t) + "</li>"; }).join("") + "</ul>" : "<p class=\"muted\">현재 기준 추가 점검 인사이트 없음</p>") +
-      "</div>";
+    weatherContent.innerHTML = currentCardHtml + forecastHtml + chartHtml;
 
-    weatherContent.innerHTML = currentCardHtml + forecastHtml + chartHtml + insightHtml;
+    var hourlyTime = (data.hourly && data.hourly.time) ? data.hourly.time : [];
+    var hourlyTemp = (data.hourly && data.hourly.temperature_2m) ? data.hourly.temperature_2m : [];
+    var hourLabels = hourlyTime.map(function (t) {
+      var d = new Date(t);
+      return (d.getMonth() + 1) + "/" + d.getDate() + " " + d.getHours() + "시";
+    });
 
-    if (typeof Chart !== "undefined" && maxTemps.length) {
+    if (typeof Chart !== "undefined" && (hourlyTemp.length > 0 || maxTemps.length > 0)) {
       var ctx = document.getElementById("weatherChart");
       if (ctx) {
         if (weatherChartInstance) weatherChartInstance.destroy();
+        var chartLabels = hourlyTemp.length ? hourLabels : dayLabels;
+        var chartData = hourlyTemp.length ? hourlyTemp.map(function (v) { return v != null ? Math.round(v * 10) / 10 : null; }) : maxTemps.map(function (v) { return v != null ? Math.round(v) : null; });
         weatherChartInstance = new Chart(ctx.getContext("2d"), {
           type: "line",
           data: {
-            labels: dayLabels,
-            datasets: [{ label: "최고기온(℃)", data: maxTemps.map(function (v) { return v != null ? Math.round(v) : null; }), borderColor: "rgb(0, 122, 204)", backgroundColor: "rgba(0, 122, 204, 0.1)", fill: true, tension: 0.3 }]
+            labels: chartLabels,
+            datasets: [{ label: "기온(℃)", data: chartData, borderColor: "rgb(0, 122, 204)", backgroundColor: "rgba(0, 122, 204, 0.1)", fill: true, tension: 0.3 }]
           },
-          options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: false } } }
+          options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+              legend: { display: false },
+              zoom: { zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: "xy" }, pan: { enabled: true, mode: "xy" } }
+            },
+            scales: { y: { min: -20, max: 50 }, x: { ticks: { maxRotation: 45, maxTicksLimit: hourlyTemp.length > 24 ? 24 : 12 } } }
+          }
         });
       }
     }

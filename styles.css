@@ -426,7 +426,9 @@ body{
 .weather-risk--ok{ background: rgba(34, 197, 94, 0.15); color: #16a34a; }
 .weather-risk--warn{ background: rgba(234, 179, 8, 0.2); color: #ca8a04; }
 .weather-risk--danger{ background: rgba(225, 29, 72, 0.15); color: var(--bad); }
-.weather-risk-detail{ grid-column: 1 / -1; font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+.weather-risk-detail-wrap{ grid-column: 1 / -1; margin-top: 6px; line-height: 1.4; }
+.weather-risk-detail-label{ font-size: 12px; font-weight: 600; color: var(--text); margin-right: 6px; }
+.weather-risk-detail{ font-size: 12px; color: var(--muted); }
 .weather-forecast-scroll{ overflow-x: auto; padding-bottom: 8px; -webkit-overflow-scrolling: touch; }
 .weather-forecast-inner{ display: flex; gap: 12px; min-width: min-content; padding: 4px 0; }
 .weather-forecast-day{
