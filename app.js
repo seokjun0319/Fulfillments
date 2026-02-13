@@ -283,19 +283,11 @@ function renderNoticesTab() {
 
   return `
     <div class="grid">
-      <div class="card card--wide">
+      <div class="card card--half">
         <h3 class="card__title">최신 공지</h3>
         <div class="card__body">${latestHtml}</div>
       </div>
-      <div class="card">
-        <h3 class="card__title">바로가기</h3>
-        <div class="card__body">
-          - 공지 작성/승인 프로세스<br/>
-          - 변경 이력<br/>
-          - 자주 묻는 질문
-        </div>
-      </div>
-      <div class="card card--full">
+      <div class="card card--half">
         <div class="card__head" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
           <h3 class="card__title" style="margin:0;">공지사항 목록</h3>
           <button type="button" class="btn btn--primary" id="btnAddNotice">신규 공지 작성</button>
@@ -304,10 +296,10 @@ function renderNoticesTab() {
           <table class="table">
             <thead>
               <tr>
-                <th style="width:120px;">구분</th>
+                <th style="width:100px;">구분</th>
                 <th>제목</th>
-                <th style="width:120px;">작성일</th>
-                <th style="width:120px;">상태</th>
+                <th style="width:100px;">작성일</th>
+                <th style="width:80px;">상태</th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>
@@ -756,14 +748,14 @@ function renderMinigameTab() {
 function renderNewsAndWeatherBlocks() {
   return `
     <div class="grid" style="margin-top:24px;">
-      <div class="card card--wide">
+      <div class="card card--half">
         <div id="logistics-news" class="news-section">
           <h3 class="card__title">물류 뉴스 클리핑</h3>
           <p class="muted" style="margin-bottom:10px;">최신 물류/의약품 관련 뉴스를 불러옵니다.</p>
           <div class="news-list">뉴스를 불러오는 중...</div>
         </div>
       </div>
-      <div class="card card--full">
+      <div class="card card--half">
         <div id="weather-check" class="weather-dashboard">
           <h3 class="card__title">물류센터 날씨 대시보드</h3>
           <div class="weather-center-toggles">
