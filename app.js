@@ -6,7 +6,6 @@ const GEMINI_MODEL = "gemini-2.5-flash";
 const GEMINI_MAX_HISTORY = 20;
 /** (미사용) 예전 물류 뉴스용 NewsAPI 키 - 현재는 Google News RSS + rss2json 사용 */
 var NEWS_API_KEY = "";
-var WEATHER_SERVICE_KEY = "";
 var AI_STUDY_VIDEOS = [
   { id: "dQw4w9WgXcQ", title: "AI 예시 영상 1" },
   { id: "jNQXAC9IVRw", title: "AI 예시 영상 2" },
@@ -1176,39 +1175,63 @@ function fetchLogisticsNews() {
     });
 }
 
+/**
+ * Open-Meteo(무료, API 키 불필요)로 서울 날씨 조회 후 물류센터 점검포인트 영역을 채웁니다.
+ * 기온·습도·강수확률·풍속 표시 + 조건별 인사이트 문구 출력.
+ */
+async function fetchWeatherInsight() {
+  var weatherContent = document.querySelector("#weather-check .weather-content");
+  if (!weatherContent) return;
+  var url = "https://api.open-meteo.com/v1/forecast?latitude=37.5665&longitude=126.9780&current=temperature_2m,relative_humidity_2m,wind_speed_10m&hourly=precipitation_probability&timezone=Asia/Seoul";
+  try {
+    var res = await fetch(url);
+    var data = await res.json();
+    if (!data.current) {
+      weatherContent.innerHTML = "<p class=\"muted\">날씨 정보를 불러올 수 없습니다.</p>";
+      return;
+    }
+    var cur = data.current;
+    var temp = cur.temperature_2m != null ? Math.round(cur.temperature_2m) : null;
+    var humidity = cur.relative_humidity_2m != null ? Math.round(cur.relative_humidity_2m) : null;
+    var wind = cur.wind_speed_10m != null ? Math.round(cur.wind_speed_10m) : null;
+    var pop = (data.hourly && data.hourly.precipitation_probability && data.hourly.precipitation_probability[0] != null)
+      ? data.hourly.precipitation_probability[0] : null;
+
+    var tempStr = temp != null ? temp + "℃" : "-";
+    var humidityStr = humidity != null ? humidity + "%" : "-";
+    var popStr = pop != null ? pop + "%" : "-";
+    var windStr = wind != null ? wind + " km/h" : "-";
+
+    var insights = [];
+    if (pop != null && pop >= 70) insights.push("센터 누수 및 출입구 방수 상태 점검하세요.");
+    if (humidity != null && humidity >= 75) insights.push("의약품 및 민감 화물 습도 관리 확인하세요.");
+    if (wind != null && wind >= 10) insights.push("야드 적재물 및 낙하물 위험 점검하세요.");
+    if (temp != null && temp >= 30) insights.push("냉장/냉동 구역 온도 점검하세요.");
+    if (temp != null && temp <= 0) insights.push("결빙 및 도크 슬립 위험 점검하세요.");
+
+    var insightHtml = insights.length
+      ? "<ul class=\"weather-insight-list\">" + insights.map(function (t) { return "<li>" + escapeHtml(t) + "</li>"; }).join("") + "</ul>"
+      : "<p class=\"muted\">현재 기준 추가 점검 인사이트 없음</p>";
+
+    weatherContent.innerHTML =
+      "<div class=\"weather-data\">" +
+      "<p><strong>현재 기온:</strong> " + escapeHtml(tempStr) + "</p>" +
+      "<p><strong>현재 습도:</strong> " + escapeHtml(humidityStr) + "</p>" +
+      "<p><strong>강수확률:</strong> " + escapeHtml(popStr) + "</p>" +
+      "<p><strong>풍속:</strong> " + escapeHtml(windStr) + "</p>" +
+      "</div>" +
+      "<h4 class=\"weather-insight-title\">물류센터 인사이트</h4>" +
+      insightHtml;
+  } catch (err) {
+    weatherContent.innerHTML = "<p class=\"muted\">날씨 정보를 불러올 수 없습니다.</p>";
+  }
+}
+
 function wireIntegrated() {
   var weatherContent = document.querySelector("#weather-check .weather-content");
 
   fetchLogisticsNews();
-
-  if (weatherContent) {
-    if (typeof WEATHER_SERVICE_KEY === "string" && WEATHER_SERVICE_KEY.trim()) {
-      var today = new Date();
-      var baseDate = today.getFullYear() + String(today.getMonth() + 1).padStart(2, "0") + String(today.getDate()).padStart(2, "0");
-      var url = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst?serviceKey=" + encodeURIComponent(WEATHER_SERVICE_KEY.trim()) + "&numOfRows=20&pageNo=1&base_date=" + baseDate + "&base_time=0500&nx=60&ny=127&dataType=JSON";
-      fetch(url)
-        .then(function (res) { return res.json(); })
-        .then(function (data) {
-          var items = data.response && data.response.body && data.response.body.items && data.response.body.items.item;
-          if (items && Array.isArray(items)) {
-            var pop = items.find(function (i) { return i.category === "POP"; });
-            var rainPercent = pop ? parseInt(pop.fcstValue, 10) : 0;
-            if (rainPercent >= 60) {
-              weatherContent.innerHTML = '<p class="weather-alert">⚠️ 물류센터 점검 필요: 오늘 비올 확률 ' + rainPercent + "%</p>";
-            } else {
-              weatherContent.innerHTML = '<p class="weather-ok">오늘은 물류센터 점검 위험 낮음 (강수확률 ' + (rainPercent || "-") + "%)</p>";
-            }
-          } else {
-            weatherContent.innerHTML = '<p class="muted">예보 데이터를 파싱하지 못했습니다.</p>';
-          }
-        })
-        .catch(function () {
-          weatherContent.innerHTML = '<p class="muted">기상청 API 연동 실패. serviceKey와 base_date/base_time을 확인해 주세요.</p>';
-        });
-    } else {
-      weatherContent.innerHTML = '<p class="muted">기상청 API 서비스 키를 설정하면 강수확률 기반 점검 안내를 표시합니다. app.js에서 WEATHER_SERVICE_KEY를 설정하세요.</p>';
-    }
-  }
+  fetchWeatherInsight();
 }
 
 function initFloatingUtils() {
