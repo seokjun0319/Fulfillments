@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>풀필먼트 AI 지식 허브 · Logistics Control Tower</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              tower: { dark: '#0f172a', panel: '#1e293b', border: '#334155', accent: '#0ea5e9', glow: '#38bdf8' }
+            }
+          }
+        }
+      }
+    </script>
+    <link rel="icon" href="./assets/favicon.png" type="image/png" />
+    <style>
+      .tower-grid { background-image: linear-gradient(rgba(14, 165, 233, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(14, 165, 233, 0.03) 1px, transparent 1px); background-size: 24px 24px; }
+      .card-glow:hover { box-shadow: 0 0 0 1px rgba(14, 165, 233, 0.3), 0 8px 32px -8px rgba(0,0,0,0.4); }
+    </style>
+  </head>
+  <body class="bg-tower-dark text-slate-100 min-h-screen tower-grid">
+    <!-- Control Tower 헤더 -->
+    <header class="border-b border-tower-border bg-tower-panel/80 backdrop-blur-sm sticky top-0 z-10">
+      <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <img src="./assets/logo.png" alt="로고" class="h-9 w-auto opacity-90" onerror="this.src='./assets/logo.svg'" />
+          <div>
+            <h1 class="text-lg font-bold text-white tracking-tight">풀필먼트 AI 지식 허브</h1>
+            <p class="text-xs text-slate-400">Logistics Control Tower · 직원 AI 활용 · 지식 공유</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-slate-500 hidden sm:inline">이지메디컴 풀필먼트사업부</span>
+          <a href="index.html" class="px-3 py-1.5 rounded-lg bg-tower-accent/20 text-tower-glow text-sm font-medium hover:bg-tower-accent/30 border border-tower-accent/40 transition-colors">전체 메뉴 →</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 py-8">
+      <!-- 대시보드 타이틀 -->
+      <section class="mb-8">
+        <p class="text-tower-accent text-sm font-medium mb-1">메인 대시보드</p>
+        <h2 class="text-2xl font-bold text-white mb-2">AI 프롬프트 공유 · 물류 용어 검색</h2>
+        <p class="text-slate-400 text-sm max-w-xl">현장 직원이 바로 쓸 수 있는 AI 꿀팁과 물류 용어를 한곳에서 확인하세요.</p>
+      </section>
+
+      <!-- 메인 카드 2열: Control Tower 스타일 -->
+      <div class="grid md:grid-cols-2 gap-6">
+        <!-- AI 프롬프트 공유 -->
+        <section class="rounded-xl border border-tower-border bg-tower-panel p-6 card-glow transition-all">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-tower-accent/20 text-tower-glow text-xl">💡</span>
+            <div>
+              <h3 class="text-lg font-bold text-white">AI 프롬프트 공유</h3>
+              <p class="text-xs text-slate-400">ChatGPT · Gemini 꿀팁</p>
+            </div>
+          </div>
+          <p class="text-slate-400 text-sm mb-5 leading-relaxed">직원들이 써본 프롬프트와 꿀팁을 공유합니다. 보고서 요약, 알림 문구 생성, 물류 용어 질문 등 업무에 바로 적용해 보세요.</p>
+          <a href="index.html#ai-study" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-tower-accent text-white text-sm font-medium hover:bg-cyan-500 focus:ring-2 focus:ring-tower-accent focus:ring-offset-2 focus:ring-offset-tower-dark transition-colors">
+            AI 꿀팁 보러 가기
+          </a>
+        </section>
+
+        <!-- 물류 용어 검색 -->
+        <section class="rounded-xl border border-tower-border bg-tower-panel p-6 card-glow transition-all">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/20 text-amber-400 text-xl">📖</span>
+            <div>
+              <h3 class="text-lg font-bold text-white">물류 용어 검색</h3>
+              <p class="text-xs text-slate-400">입고 · 출고 · 로케이션 · 피킹</p>
+            </div>
+          </div>
+          <p class="text-slate-400 text-sm mb-5 leading-relaxed">물류 현장 용어를 쉽게 검색하고 학습할 수 있습니다.</p>
+          <div class="flex gap-2">
+            <input type="search" id="termSearch" placeholder="용어 검색 (예: 피킹, 입고)" class="flex-1 px-3 py-2.5 rounded-lg bg-tower-dark border border-tower-border text-slate-100 placeholder-slate-500 text-sm focus:ring-2 focus:ring-tower-accent focus:border-tower-accent" />
+            <a href="index.html#works-archive" id="termSearchBtn" class="px-4 py-2.5 rounded-lg bg-slate-600 text-white text-sm font-medium hover:bg-slate-500 focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 focus:ring-offset-tower-dark transition-colors">검색</a>
+          </div>
+          <p class="text-slate-500 text-xs mt-2">검색 시 물류 용어집 페이지로 이동합니다.</p>
+        </section>
+      </div>
+
+      <!-- 빠른 링크 (Control Tower 패널 스타일) -->
+      <section class="mt-8 pt-6 border-t border-tower-border">
+        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">바로가기</h3>
+        <div class="flex flex-wrap gap-2">
+          <a href="index.html#notices" class="px-3 py-2 rounded-lg bg-tower-panel border border-tower-border text-slate-300 text-sm hover:border-tower-accent/50 hover:text-white transition-colors">주요 공지사항</a>
+          <a href="index.html#ai-study" class="px-3 py-2 rounded-lg bg-tower-panel border border-tower-border text-slate-300 text-sm hover:border-tower-accent/50 hover:text-white transition-colors">AI Study · 꿀팁</a>
+          <a href="index.html#works-archive" class="px-3 py-2 rounded-lg bg-tower-panel border border-tower-border text-slate-300 text-sm hover:border-tower-accent/50 hover:text-white transition-colors">물류 용어집 · 연락망</a>
+          <a href="index.html#biz-status" class="px-3 py-2 rounded-lg bg-tower-panel border border-tower-border text-slate-300 text-sm hover:border-tower-accent/50 hover:text-white transition-colors">사업부 현황</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="max-w-6xl mx-auto px-4 py-5 mt-6 text-center text-slate-500 text-xs border-t border-tower-border">
+      © EZMEDICOM Fulfillment · 풀필먼트 AI 지식 허브 (Quantlab)
+    </footer>
+
+    <script>
+      document.getElementById("termSearchBtn").addEventListener("click", function () {
+        window.location.href = "index.html#works-archive";
+      });
+      document.getElementById("termSearch").addEventListener("keydown", function (e) {
+        if (e.key === "Enter") document.getElementById("termSearchBtn").click();
+      });
+    </script>
+  </body>
+</html>

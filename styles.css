@@ -284,6 +284,8 @@ body{
 .table td{ color: var(--muted); }
 .table tr:last-child td{ border-bottom: none; }
 .table-wrap{ overflow-x: auto; margin-top: 4px; }
+.notice-list-title{ max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.notice-list-body{ max-width: 280px; font-size: 13px; line-height: 1.4; color: var(--muted); }
 .table--glossary td{ vertical-align: top; line-height: 1.5; }
 .table--glossary td:first-child{ font-weight: 600; color: var(--text); }
 .table--glossary td:nth-child(2){ color: var(--muted); }
@@ -387,6 +389,24 @@ body{
 .ai-knowhow-item__del{ width: 28px; height: 28px; border: none; background: transparent; color: var(--muted); font-size: 18px; cursor: pointer; border-radius: 6px; padding: 0; line-height: 1; }
 .ai-knowhow-item__del:hover{ color: var(--bad); background: rgba(225, 29, 72, 0.08); }
 .ai-knowhow-item__body{ font-size: 14px; line-height: 1.5; color: var(--text); }
+
+.ai-tips-list{ display: flex; flex-direction: column; gap: 12px; }
+.ai-tip-item{ padding: 12px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface-2); }
+.ai-tip-item__head{ display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.ai-tip-item__head .tag{ flex-shrink: 0; }
+.ai-tip-item__del{ margin-left: auto; width: 28px; height: 28px; border: none; background: transparent; color: var(--muted); font-size: 18px; cursor: pointer; border-radius: 6px; padding: 0; line-height: 1; }
+.ai-tip-item__del:hover{ color: var(--bad); background: rgba(225, 29, 72, 0.08); }
+.ai-tip-item__situation{ font-size: 14px; margin-bottom: 6px; }
+.ai-tip-item__prompt{ font-size: 12px; white-space: pre-wrap; word-break: break-word; background: rgba(0,0,0,0.06); padding: 8px 10px; border-radius: 6px; margin: 6px 0; max-height: 120px; overflow-y: auto; }
+.ai-tip-item__response{ font-size: 12px; line-height: 1.4; }
+.ai-tip-item__tip{ font-size: 12px; margin-top: 6px; color: var(--text); }
+
+.ai-quiz-list{ display: flex; flex-direction: column; gap: 10px; }
+.ai-quiz-item details{ padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface-2); }
+.ai-quiz-item summary{ cursor: pointer; font-size: 14px; font-weight: 600; list-style: none; }
+.ai-quiz-item summary::-webkit-details-marker{ display: none; }
+.ai-quiz-answer{ margin: 10px 0 0; padding-top: 10px; border-top: 1px solid var(--border); font-size: 13px; color: var(--muted); line-height: 1.5; }
+
 .video-list{ display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
 .study-section .video-list{ display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
 .video-item{ border-radius: var(--radius-sm); overflow: hidden; background: var(--surface-2); }
@@ -711,6 +731,7 @@ body{
 }
 .centers-map .leaflet-popup-content{ margin: 10px 14px; font-size: 13px; }
 .centers-map .leaflet-popup-content .muted{ color: var(--muted); font-size: 12px; }
+.centers-map .centers-marker{ background: transparent !important; border: none !important; }
 
 .footer{
   padding: 10px 18px 14px;

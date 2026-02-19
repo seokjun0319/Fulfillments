@@ -11,6 +11,7 @@ var AI_STUDY_VIDEOS = [
   { id: "jNQXAC9IVRw", title: "AI 예시 영상 2" },
 ];
 const AI_KNOWHOW_KEY = "fulfillment-ai-knowhow";
+const AI_TIPS_KEY = "fulfillment-ai-tips";
 
 function getAiKnowhow() {
   try {
@@ -38,12 +39,39 @@ function deleteAiKnowhowItem(id) {
   return list;
 }
 
+function getAiTips() {
+  try {
+    var raw = localStorage.getItem(AI_TIPS_KEY);
+    if (raw) {
+      var list = JSON.parse(raw);
+      if (Array.isArray(list)) return list;
+    }
+  } catch (_) {}
+  return [];
+}
+function saveAiTips(list) {
+  try { localStorage.setItem(AI_TIPS_KEY, JSON.stringify(list)); } catch (_) {}
+}
+function addAiTip(item) {
+  var list = getAiTips();
+  var id = String(Date.now());
+  list.unshift({ id: id, aiTool: item.aiTool || "", situation: item.situation || "", prompt: item.prompt || "", responseExample: item.responseExample || "", tip: item.tip || "", createdAt: new Date().toISOString().slice(0, 10) });
+  saveAiTips(list);
+  return list;
+}
+function deleteAiTip(id) {
+  var list = getAiTips().filter(function (x) { return x.id !== id; });
+  saveAiTips(list);
+  return list;
+}
+
 function buildPageContextForChat() {
   var parts = [];
   var notices = getNotices();
   if (notices.length) {
     parts.push("## 공지사항\n" + notices.slice(0, 15).map(function (n) {
-      return "- [" + (n.createdAt || "") + "] " + (n.category || "") + " | " + (n.title || "") + (n.status ? " (" + n.status + ")" : "") + "\n  " + (n.body || "").replace(/\n/g, " ");
+      var status = getNoticeStatusFromDates(n.noticeStartDate, n.noticeEndDate);
+      return "- [" + (n.createdAt || "") + "] " + (n.category || "") + " | " + (n.title || "") + " (" + status + ")\n  " + noticeBodyPlainText(n.body || "").replace(/\n/g, " ");
     }).join("\n"));
   }
   var contacts = getContacts();
@@ -193,6 +221,18 @@ const CENTERS_LOCATIONS = [
 
 let centersMapInstance = null;
 
+function centerMarkerIcon(type) {
+  var isDelivery = (type || "").trim() === "배송센터";
+  var bg = isDelivery ? "#16a34a" : "#007acc";
+  var iconChar = isDelivery ? "🚚" : "📦";
+  return L.divIcon({
+    className: "centers-marker",
+    html: "<span style=\"display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:" + bg + ";color:#fff;font-size:16px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3);\">" + iconChar + "</span>",
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+  });
+}
+
 function initCentersMap() {
   const container = document.getElementById("centers-map");
   if (!container || typeof L === "undefined") return;
@@ -207,7 +247,7 @@ function initCentersMap() {
   }).addTo(map);
   const bounds = [];
   CENTERS_LOCATIONS.forEach((c) => {
-    const marker = L.marker([c.lat, c.lng]).addTo(map);
+    const marker = L.marker([c.lat, c.lng], { icon: centerMarkerIcon(c.type) }).addTo(map);
     marker.bindPopup(`<strong>${escapeHtml(c.name)}</strong><br/><span class="muted">${escapeHtml(c.type)}</span><br/>${escapeHtml(c.address)}`);
     bounds.push([c.lat, c.lng]);
   });
@@ -257,22 +297,55 @@ function addNotice(notice) {
   return list;
 }
 
+function updateNotice(id, notice) {
+  const list = getNotices();
+  const i = list.findIndex(function (n) { return n.id === id; });
+  if (i < 0) return list;
+  list[i] = { ...list[i], ...notice };
+  saveNotices(list);
+  return list;
+}
+
+function deleteNotice(id) {
+  const list = getNotices().filter(function (n) { return n.id !== id; });
+  saveNotices(list);
+  return list;
+}
+
 function statusTag(status) {
   if (status === "공지중") return '<span class="tag warn">공지중</span>';
   if (status === "예정") return '<span class="tag">예정</span>';
   return '<span class="tag">종료</span>';
 }
 
+function getNoticeStatusFromDates(noticeStartDate, noticeEndDate) {
+  var today = new Date();
+  var todayStr = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0") + "-" + String(today.getDate()).padStart(2, "0");
+  var start = (noticeStartDate || "").trim();
+  var end = (noticeEndDate || "").trim();
+  if (start && todayStr < start) return "예정";
+  if (end && todayStr > end) return "종료";
+  return "공지중";
+}
+
+function noticeBodyPlainText(html) {
+  if (!html || typeof html !== "string") return "";
+  var div = document.createElement("div");
+  div.innerHTML = html;
+  return (div.textContent || div.innerText || "").trim().replace(/\s+/g, " ");
+}
+
 function renderNoticesTab() {
   const notices = getNotices();
   const latest = notices[0] || null;
+  const latestStatus = getNoticeStatusFromDates(latest ? latest.noticeStartDate : "", latest ? latest.noticeEndDate : "");
   const latestHtml = latest
     ? `
     <div class="notice-meta" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
       <span class="tag">${escapeHtml(latest.category)}</span>
       <span class="muted">${escapeHtml(latest.author || "")}</span>
       <span class="muted">작성일시 ${formatNoticeDatetime(latest.createdAt)}</span>
-      ${latest.status ? statusTag(latest.status) : ""}
+      ${statusTag(latestStatus)}
     </div>
     <b>${escapeHtml(latest.title)}</b>
     <div class="notice-body-html" style="margin-top:8px;">${sanitizeNoticeBody(latest.body || "")}</div>
@@ -281,15 +354,24 @@ function renderNoticesTab() {
 
   const rows = notices
     .map(
-      (n) =>
-        `<tr>
+      (n) => {
+        var computedStatus = getNoticeStatusFromDates(n.noticeStartDate, n.noticeEndDate);
+        var bodyPreview = noticeBodyPlainText(n.body || "");
+        if (bodyPreview.length > 80) bodyPreview = bodyPreview.slice(0, 80) + "…";
+        return `<tr data-notice-id="${escapeHtml(n.id)}">
           <td>${escapeHtml(n.category)}</td>
-          <td>${escapeHtml(n.title)}</td>
+          <td class="notice-list-title">${escapeHtml(n.title)}</td>
+          <td class="notice-list-body">${escapeHtml(bodyPreview || "-")}</td>
           <td>${escapeHtml(n.author || "-")}</td>
           <td>${formatNoticeDatetime(n.createdAt)}</td>
           <td>${escapeHtml(n.noticeStartDate || "-")} ~ ${escapeHtml(n.noticeEndDate || "-")}</td>
-          <td>${statusTag(n.status)}</td>
-        </tr>`
+          <td>${statusTag(computedStatus)}</td>
+          <td class="table-actions">
+            <button type="button" class="btn-icon btn-edit notice-edit" data-id="${escapeHtml(n.id)}" title="수정">✎</button>
+            <button type="button" class="btn-icon btn-delete notice-delete" data-id="${escapeHtml(n.id)}" title="삭제">×</button>
+          </td>
+        </tr>`;
+      }
     )
     .join("");
 
@@ -312,11 +394,13 @@ function renderNoticesTab() {
             <thead>
               <tr>
                 <th style="width:90px;">구분</th>
-                <th>제목</th>
+                <th style="width:180px;">제목</th>
+                <th style="min-width:120px;">내용</th>
                 <th style="width:90px;">작성자</th>
                 <th style="width:130px;">작성일시</th>
                 <th style="width:160px;">공지기간</th>
                 <th style="width:80px;">상태</th>
+                <th style="width:90px;">관리</th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>
@@ -329,6 +413,7 @@ function renderNoticesTab() {
       <div class="modal__backdrop" id="noticeModalBackdrop"></div>
       <div class="modal__box" role="dialog" aria-labelledby="noticeModalTitle">
         <h3 class="modal__title" id="noticeModalTitle">신규 공지 작성</h3>
+        <input type="hidden" id="noticeEditId" value="" />
         <form id="noticeForm" class="form">
           <div class="form__row">
             <label class="form__label" for="noticeCategory">구분</label>
@@ -364,14 +449,6 @@ function renderNoticesTab() {
                 <input type="file" id="noticeBodyImageInput" accept="image/*" style="position:absolute; left:-9999px;" />
               </div>
             </div>
-          </div>
-          <div class="form__row">
-            <label class="form__label" for="noticeStatus">상태</label>
-            <select id="noticeStatus" class="form__input">
-              <option value="공지중">공지중</option>
-              <option value="예정">예정</option>
-              <option value="종료">종료</option>
-            </select>
           </div>
           <div class="form__actions">
             <button type="button" class="btn btn--secondary" id="noticeModalClose">취소</button>
@@ -416,12 +493,38 @@ function sanitizeNoticeBody(html) {
   return out || escapeHtml(html);
 }
 
-function openNoticeModal() {
-  const el = document.getElementById("noticeModal");
+function openNoticeModal(noticeId) {
+  var editId = noticeId || "";
+  var titleEl = document.getElementById("noticeModalTitle");
+  var editInput = document.getElementById("noticeEditId");
+  var form = document.getElementById("noticeForm");
+  var bodyEl = document.getElementById("noticeBody");
+  if (editInput) editInput.value = editId;
+  if (titleEl) titleEl.textContent = editId ? "공지 수정" : "신규 공지 작성";
+  if (form) form.reset();
+  if (bodyEl) bodyEl.innerHTML = "";
+  if (editId) {
+    var list = getNotices();
+    var n = list.find(function (x) { return x.id === editId; });
+    if (n) {
+      var cat = document.getElementById("noticeCategory");
+      if (cat) cat.value = n.category || "";
+      var author = document.getElementById("noticeAuthor");
+      if (author) author.value = n.author || "";
+      var title = document.getElementById("noticeTitle");
+      if (title) title.value = n.title || "";
+      var start = document.getElementById("noticeStartDate");
+      if (start) start.value = n.noticeStartDate || "";
+      var end = document.getElementById("noticeEndDate");
+      if (end) end.value = n.noticeEndDate || "";
+      if (bodyEl) bodyEl.innerHTML = n.body || "";
+    }
+  }
+  var el = document.getElementById("noticeModal");
   if (el) {
     el.setAttribute("aria-hidden", "false");
     el.classList.add("modal--open");
-    document.getElementById("noticeTitle").focus();
+    if (document.getElementById("noticeTitle")) document.getElementById("noticeTitle").focus();
   }
 }
 
@@ -438,12 +541,14 @@ function wireNotices() {
   const form = document.getElementById("noticeForm");
   const closeBtn = document.getElementById("noticeModalClose");
   const backdrop = document.getElementById("noticeModalBackdrop");
-  if (btn) btn.addEventListener("click", openNoticeModal);
+  if (btn) btn.addEventListener("click", function () { openNoticeModal(); });
   if (closeBtn) closeBtn.addEventListener("click", closeNoticeModal);
   if (backdrop) backdrop.addEventListener("click", closeNoticeModal);
   if (form) {
     form.addEventListener("submit", (e) => {
       e.preventDefault();
+      const editInput = document.getElementById("noticeEditId");
+      const editId = (editInput && editInput.value) ? editInput.value.trim() : "";
       const category = document.getElementById("noticeCategory").value.trim();
       const author = document.getElementById("noticeAuthor").value.trim();
       const title = document.getElementById("noticeTitle").value.trim();
@@ -451,15 +556,34 @@ function wireNotices() {
       const body = (bodyEl && bodyEl.innerHTML) ? bodyEl.innerHTML.trim() : "";
       const noticeStartDate = document.getElementById("noticeStartDate").value.trim();
       const noticeEndDate = document.getElementById("noticeEndDate").value.trim();
-      const status = document.getElementById("noticeStatus").value;
       if (!title) return;
-      addNotice({ category, author, title, body, noticeStartDate, noticeEndDate, status });
+      if (editId) {
+        updateNotice(editId, { category, author, title, body, noticeStartDate, noticeEndDate });
+      } else {
+        addNotice({ category, author, title, body, noticeStartDate, noticeEndDate });
+      }
       form.reset();
+      if (editInput) editInput.value = "";
       if (bodyEl) bodyEl.innerHTML = "";
       closeNoticeModal();
       render();
     });
   }
+  document.querySelectorAll("#content .notice-edit").forEach(function (editBtn) {
+    editBtn.addEventListener("click", function () {
+      var id = this.getAttribute("data-id");
+      if (id) openNoticeModal(id);
+    });
+  });
+  document.querySelectorAll("#content .notice-delete").forEach(function (delBtn) {
+    delBtn.addEventListener("click", function () {
+      var id = this.getAttribute("data-id");
+      if (!id) return;
+      if (typeof confirm !== "undefined" && !confirm("이 공지를 삭제할까요?")) return;
+      deleteNotice(id);
+      render();
+    });
+  });
   var bodyEditor = document.getElementById("noticeBody");
   var imgBtn = document.getElementById("noticeBodyInsertImage");
   var imgInput = document.getElementById("noticeBodyImageInput");
@@ -899,6 +1023,20 @@ function renderAiStudyTab() {
   var videoHtml = (AI_STUDY_VIDEOS || []).map(function (v) {
     return '<div class="video-item"><iframe class="video-iframe" src="https://www.youtube.com/embed/' + (v.id || "") + '" title="' + escapeHtml(v.title || "") + '" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe><p class="video-title">' + escapeHtml(v.title || "") + '</p></div>';
   }).join("");
+
+  var tipsList = getAiTips();
+  var tipsHtml = tipsList.length
+    ? tipsList.map(function (t) {
+        return '<div class="ai-tip-item" data-id="' + escapeHtml(t.id) + '"><div class="ai-tip-item__head"><span class="tag">' + escapeHtml(t.aiTool || "") + '</span><span class="muted">' + (t.createdAt || "") + '</span><button type="button" class="ai-tip-item__del" aria-label="삭제">×</button></div><div class="ai-tip-item__situation"><strong>' + escapeHtml(t.situation || "") + '</strong></div><pre class="ai-tip-item__prompt">' + escapeHtml(t.prompt || "") + '</pre><div class="ai-tip-item__response muted">' + escapeHtml((t.responseExample || "").slice(0, 200)) + (t.responseExample && t.responseExample.length > 200 ? "…" : "") + '</div>' + (t.tip ? '<div class="ai-tip-item__tip">💡 ' + escapeHtml(t.tip) + '</div>' : '') + '</div>';
+      }).join("")
+    : '<p class="muted">등록된 꿀팁이 없습니다. 아래 버튼으로 프롬프트를 공유해 보세요.</p>';
+
+  var quizHtml = '<div class="ai-quiz-list">' +
+    '<div class="ai-quiz-item"><details><summary>퀴즈 1. status가 SHIPPED로 바뀌기까지 평소 2시간 걸리던 상품이 4시간째 PENDING이에요. ChatGPT에게 "이 주문 왜 이렇게 늦어?"라고 물었을 때, AI가 가장 먼저 확인하라고 할 만한 것은?</summary><p class="ai-quiz-answer">해당 주문의 피킹/포장 완료 시점과 현재 포장대·출고대 상태(해당 오더가 어느 단계에 머물러 있는지).</p></details></div>' +
+    '<div class="ai-quiz-item"><details><summary>퀴즈 2. "OOO 상품, OOO 지역 배송 지연 예상! 담당자 확인 필요!" 알림을 자동 생성할 때 ChatGPT에 반드시 같이 넣어주는 게 좋은 데이터 3가지는?</summary><p class="ai-quiz-answer">① 상품(또는 product ID) ② 배송 지역(deliveryAddress 요약) ③ 지연/이상의 정도(평균 대비 150% 등)</p></details></div>' +
+    '<div class="ai-quiz-item"><details><summary>퀴즈 3. 포장 완료된 박스 사진을 AI가 분석해 "테이프가 덜 붙었어요!"라고 할 때, AI가 사진에서 주로 보는 것은?</summary><p class="ai-quiz-answer">박스 이음선(뚜껑·접힌 부분)과 테이프가 덮는 영역이 적절히 겹쳐 있는지(밀봉 여부).</p></details></div>' +
+    '</div>';
+
   return `
     <div class="grid">
       <div class="card card--wide">
@@ -911,6 +1049,19 @@ function renderAiStudyTab() {
         <h3 class="card__title">AI 학습 컨텐츠</h3>
         <p class="muted" style="margin-bottom:12px;">AI 관련 유튜브 영상입니다. app.js의 AI_STUDY_VIDEOS에서 영상 ID를 수정·추가할 수 있습니다.</p>
         <div class="video-list">${videoHtml}</div>
+      </div>
+    </div>
+    <div class="grid" style="margin-top:24px;">
+      <div class="card card--wide">
+        <h3 class="card__title">AI 꿀팁 & 프롬프트 공유</h3>
+        <p class="muted" style="margin-bottom:12px;">직원들이 써본 AI 프롬프트와 팁을 공유합니다.</p>
+        <div class="ai-tips-list">${tipsHtml}</div>
+        <button type="button" class="btn btn--primary" id="aiTipAdd" style="margin-top:12px;">꿀팁 등록</button>
+      </div>
+      <div class="card">
+        <h3 class="card__title">AI 퀴즈</h3>
+        <p class="muted" style="margin-bottom:10px;">물류 현장 × AI 연결 퀴즈 (클릭하면 정답)</p>
+        ${quizHtml}
       </div>
     </div>
     <div class="modal" id="aiKnowhowModal" aria-hidden="true">
@@ -928,6 +1079,38 @@ function renderAiStudyTab() {
           </div>
           <div class="form__actions">
             <button type="button" class="btn btn--secondary" id="aiKnowhowModalClose">취소</button>
+            <button type="submit" class="btn btn--primary">저장</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div class="modal" id="aiTipModal" aria-hidden="true">
+      <div class="modal__backdrop" id="aiTipModalBackdrop"></div>
+      <div class="modal__box" role="dialog" aria-labelledby="aiTipModalTitle">
+        <h3 class="modal__title" id="aiTipModalTitle">AI 꿀팁 등록</h3>
+        <form id="aiTipForm" class="form">
+          <div class="form__row">
+            <label class="form__label" for="aiTipTool">사용 AI 툴</label>
+            <input type="text" id="aiTipTool" class="form__input" placeholder="예: ChatGPT, Gemini, Midjourney" required />
+          </div>
+          <div class="form__row">
+            <label class="form__label" for="aiTipSituation">상황 설명 (한 줄)</label>
+            <input type="text" id="aiTipSituation" class="form__input" placeholder="어떤 업무/문제를 해결하려 했는지" required />
+          </div>
+          <div class="form__row">
+            <label class="form__label" for="aiTipPrompt">실제 프롬프트</label>
+            <textarea id="aiTipPrompt" class="form__input form__textarea" rows="4" placeholder="그대로 복붙 가능한 질문/지시문"></textarea>
+          </div>
+          <div class="form__row">
+            <label class="form__label" for="aiTipResponse">AI 답변 예시 (요약 가능)</label>
+            <textarea id="aiTipResponse" class="form__input form__textarea" rows="3" placeholder="요약 또는 일부 발췌"></textarea>
+          </div>
+          <div class="form__row">
+            <label class="form__label" for="aiTipTip">개인적인 팁</label>
+            <input type="text" id="aiTipTip" class="form__input" placeholder="톤 조정, 추가 질문, 언어 등 (선택)" />
+          </div>
+          <div class="form__actions">
+            <button type="button" class="btn btn--secondary" id="aiTipModalClose">취소</button>
             <button type="submit" class="btn btn--primary">저장</button>
           </div>
         </form>
@@ -1053,10 +1236,22 @@ const ROUTES = {
         </div>
         <div class="card card--half">
           <h3 class="card__title">물류센터 현황</h3>
-          <div class="embed-wrap centers-embed">
-            <iframe title="물류센터 스프레드시트" class="embed-iframe" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQBx93IwWKNm0DAPbFMIAsoVGOBzq9HuypzC971C4pMMnAjYa8j2fPdZ6khtk79ovLI-me9mwUyQDpC/pubhtml"></iframe>
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th style="width:100px;">구분</th>
+                  <th style="width:140px;">명칭</th>
+                  <th>주소지</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${CENTERS_LOCATIONS.map(function (c) {
+                  return "<tr><td>" + escapeHtml(c.type || "") + "</td><td>" + escapeHtml(c.name || "") + "</td><td>" + escapeHtml(c.address || "") + "</td></tr>";
+                }).join("")}
+              </tbody>
+            </table>
           </div>
-          <p class="muted" style="margin-top:8px; font-size:12px;">시트가 보이지 않으면 <a href="https://docs.google.com/spreadsheets/d/1DiFDr5BMGCX_8nIHhKAYhXmBSHObmRW9xFZpuqBPxp4/edit?usp=sharing" target="_blank" rel="noopener">이 링크</a>로 열어 보세요.</p>
         </div>
         <div class="card card--full">
           <h3 class="card__title">조직도</h3>
@@ -1169,6 +1364,50 @@ function wireAiStudy() {
       var item = e.target.closest(".ai-knowhow-item");
       if (item && item.dataset.id && confirm("이 노하우를 삭제할까요?")) {
         deleteAiKnowhowItem(item.dataset.id);
+        render();
+      }
+    });
+  }
+
+  var tipModal = document.getElementById("aiTipModal");
+  var tipAddBtn = document.getElementById("aiTipAdd");
+  var tipCloseBtn = document.getElementById("aiTipModalClose");
+  var tipBackdrop = document.getElementById("aiTipModalBackdrop");
+  var tipForm = document.getElementById("aiTipForm");
+  var tipsListEl = document.querySelector(".ai-tips-list");
+  function openTipModal() {
+    if (tipModal) { tipModal.setAttribute("aria-hidden", "false"); tipModal.classList.add("modal--open"); }
+    ["aiTipTool", "aiTipSituation", "aiTipPrompt", "aiTipResponse", "aiTipTip"].forEach(function (id) { var el = document.getElementById(id); if (el) el.value = ""; });
+    var first = document.getElementById("aiTipTool");
+    if (first) first.focus();
+  }
+  function closeTipModal() {
+    if (tipModal) { tipModal.setAttribute("aria-hidden", "true"); tipModal.classList.remove("modal--open"); }
+  }
+  if (tipAddBtn) tipAddBtn.addEventListener("click", openTipModal);
+  if (tipCloseBtn) tipCloseBtn.addEventListener("click", closeTipModal);
+  if (tipBackdrop) tipBackdrop.addEventListener("click", closeTipModal);
+  if (tipForm) {
+    tipForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var aiTool = (document.getElementById("aiTipTool") && document.getElementById("aiTipTool").value || "").trim();
+      var situation = (document.getElementById("aiTipSituation") && document.getElementById("aiTipSituation").value || "").trim();
+      var prompt = (document.getElementById("aiTipPrompt") && document.getElementById("aiTipPrompt").value || "").trim();
+      var responseExample = (document.getElementById("aiTipResponse") && document.getElementById("aiTipResponse").value || "").trim();
+      var tip = (document.getElementById("aiTipTip") && document.getElementById("aiTipTip").value || "").trim();
+      if (!aiTool || !situation) return;
+      addAiTip({ aiTool: aiTool, situation: situation, prompt: prompt, responseExample: responseExample, tip: tip });
+      closeTipModal();
+      render();
+    });
+  }
+  if (tipsListEl) {
+    tipsListEl.addEventListener("click", function (e) {
+      var del = e.target.closest(".ai-tip-item__del");
+      if (!del) return;
+      var item = e.target.closest(".ai-tip-item");
+      if (item && item.dataset.id && confirm("이 꿀팁을 삭제할까요?")) {
+        deleteAiTip(item.dataset.id);
         render();
       }
     });
@@ -1314,7 +1553,7 @@ async function fetchWeatherDashboard(centerKey) {
   weatherContent.innerHTML = "<div class=\"weather-loading\">날씨를 불러오는 중…</div>";
   var url = "https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon +
     "&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code,precipitation" +
-    "&hourly=temperature_2m,precipitation_probability&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,weather_code" +
+    "&hourly=temperature_2m,relative_humidity_2m,precipitation_probability&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,weather_code" +
     "&timezone=Asia/Seoul";
   try {
     var res = await fetch(url);
@@ -1390,6 +1629,7 @@ async function fetchWeatherDashboard(centerKey) {
 
     var hourlyTime = (data.hourly && data.hourly.time) ? data.hourly.time : [];
     var hourlyTemp = (data.hourly && data.hourly.temperature_2m) ? data.hourly.temperature_2m : [];
+    var hourlyHumidity = (data.hourly && data.hourly.relative_humidity_2m) ? data.hourly.relative_humidity_2m : [];
     var hourLabels = hourlyTime.map(function (t) {
       var d = new Date(t);
       return (d.getMonth() + 1) + "/" + d.getDate() + " " + d.getHours() + "시";
@@ -1401,20 +1641,46 @@ async function fetchWeatherDashboard(centerKey) {
         if (weatherChartInstance) weatherChartInstance.destroy();
         var chartLabels = hourlyTemp.length ? hourLabels : dayLabels;
         var chartData = hourlyTemp.length ? hourlyTemp.map(function (v) { return v != null ? Math.round(v * 10) / 10 : null; }) : maxTemps.map(function (v) { return v != null ? Math.round(v) : null; });
+        var len = chartLabels.length;
+        var tempLine1 = centerKey === "osan" ? 2 : 15;
+        var tempLine2 = centerKey === "osan" ? 8 : 25;
+        var line1Arr = [];
+        var line2Arr = [];
+        var humidity70Arr = [];
+        for (var i = 0; i < len; i++) {
+          line1Arr.push(tempLine1);
+          line2Arr.push(tempLine2);
+          humidity70Arr.push(70);
+        }
+        var humidityData = hourlyHumidity.length ? hourlyHumidity.slice(0, len).map(function (v) { return v != null ? v : null; }) : [];
+        var datasets = [
+          { label: "기온(℃)", data: chartData, borderColor: "rgb(0, 122, 204)", backgroundColor: "rgba(0, 122, 204, 0.1)", fill: true, tension: 0.3, yAxisID: "y" },
+          { label: tempLine1 + "℃ 기준", data: line1Arr, borderColor: "rgba(150, 150, 150, 0.8)", borderDash: [6, 4], fill: false, pointRadius: 0, yAxisID: "y" },
+          { label: tempLine2 + "℃ 기준", data: line2Arr, borderColor: "rgba(150, 150, 150, 0.8)", borderDash: [6, 4], fill: false, pointRadius: 0, yAxisID: "y" }
+        ];
+        if (humidityData.length) {
+          datasets.push({ label: "습도(%)", data: humidityData, borderColor: "rgb(120, 180, 120)", backgroundColor: "rgba(120, 180, 120, 0.1)", fill: true, tension: 0.3, yAxisID: "y1" });
+          datasets.push({ label: "70% 기준", data: humidity70Arr, borderColor: "rgba(100, 140, 100, 0.8)", borderDash: [6, 4], fill: false, pointRadius: 0, yAxisID: "y1" });
+        }
         weatherChartInstance = new Chart(ctx.getContext("2d"), {
           type: "line",
-          data: {
-            labels: chartLabels,
-            datasets: [{ label: "기온(℃)", data: chartData, borderColor: "rgb(0, 122, 204)", backgroundColor: "rgba(0, 122, 204, 0.1)", fill: true, tension: 0.3 }]
-          },
+          data: { labels: chartLabels, datasets: datasets },
           options: {
             responsive: true,
             maintainAspectRatio: true,
+            interaction: { mode: "index", intersect: false },
             plugins: {
-              legend: { display: false },
-              zoom: { zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: "xy" }, pan: { enabled: true, mode: "xy" } }
+              legend: { display: true, position: "top" },
+              zoom: {
+              zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: "xy", drag: { enabled: false } },
+              pan: { enabled: true, mode: "xy", modifierKey: null, threshold: 5 }
+            }
             },
-            scales: { y: { min: -20, max: 50 }, x: { ticks: { maxRotation: 45, maxTicksLimit: hourlyTemp.length > 24 ? 24 : 12 } } }
+            scales: {
+              y: { min: -20, max: 50, title: { display: true, text: "기온(℃)" } },
+              y1: humidityData.length ? { position: "right", min: 0, max: 100, title: { display: true, text: "습도(%)" }, grid: { drawOnChartArea: false } } : undefined,
+              x: { ticks: { maxRotation: 45, maxTicksLimit: hourlyTemp.length > 24 ? 24 : 12 } }
+            }
           }
         });
       }
