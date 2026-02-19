@@ -1290,7 +1290,8 @@ const ROUTES = {
     render: function () {
       return (
         '<div class="grid"><div class="card card--wide"><h3 class="card__title">페이지 피드백</h3><div class="card__body"><p class="muted">요청사항/개선 의견을 수집합니다(설문/폼 연결 예정).</p><div style="margin-top:10px;"><span class="tag">기능 개선</span> <span class="tag">콘텐츠 추가</span> <span class="tag">버그</span></div></div></div></div>' +
-        renderMinigameTab()
+        renderMinigameTab() +
+        '<div class="grid" style="margin-top:24px;"><div class="card card--full"><h3 class="card__title">크롬 다이노 게임</h3><p class="muted" style="margin-bottom:12px;">스페이스 또는 위쪽 화살표로 점프해서 장애물을 피하세요.</p><div class="dino-game-wrap"><iframe title="Chrome Dino Run" class="dino-game-iframe" src="https://codepen.io/MysticReborn/embed/rygqao?default-tab=result" allow="fullscreen" loading="lazy"></iframe></div></div></div>'
       );
     },
   },
